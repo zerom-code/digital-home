@@ -1,54 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { supabase } from '@/lib/supabase/client';
 import { Button, Input } from '@/components/ui';
 
-type Step = 'email' | 'code';
+type Step = 'email' | 'sent';
+
+/** Через сколько секунд после отправки можно попросить письмо ещё раз. */
+const RESEND_COOLDOWN_S = 60;
 
 /**
- * Вход по коду на почту.
+ * Вход по ссылке на почту.
  *
  * Пароля нет сознательно (ADR-010): для нетехнического человека пароль —
- * самая частая точка отказа, а код в письме работает всегда.
+ * самая частая точка отказа.
+ *
+ * Ссылка, а не шестизначный код: бесплатный план Supabase не даёт
+ * редактировать текст письма без своего SMTP-сервера, а стандартное письмо
+ * Supabase содержит именно кнопку-ссылку. Подстраиваемся под то, что
+ * работает без дополнительной настройки, а не требуем её на самом старте.
+ * detectSessionInUrl в lib/supabase/client.ts уже подхватывает токен из
+ * адресной строки после перехода по ссылке — здесь дополнительный код не
+ * нужен, ровно так же устроен вход через Google и Apple ниже.
  */
 export function SignIn() {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
-  async function sendCode(event: React.FormEvent) {
-    event.preventDefault();
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  async function requestLink(targetEmail: string) {
     setError(null);
     setBusy(true);
 
     const { error: sendError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: true },
+      email: targetEmail,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.origin,
+      },
     });
 
     setBusy(false);
-    if (sendError) setError(t('auth.errorEmail'));
-    else setStep('code');
-  }
-
-  async function verify(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-    setBusy(true);
-
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: 'email',
-    });
-
-    setBusy(false);
-    if (verifyError) setError(t('auth.errorCode'));
-    // При успехе onAuthStateChange сам перерисует приложение
+    if (sendError) {
+      setError(t('auth.errorEmail'));
+      return;
+    }
+    setStep('sent');
+    setCooldown(RESEND_COOLDOWN_S);
   }
 
   async function withProvider(provider: 'google' | 'apple') {
@@ -71,7 +78,13 @@ export function SignIn() {
       </header>
 
       {step === 'email' ? (
-        <form onSubmit={sendCode} className="flex flex-col gap-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void requestLink(email.trim());
+          }}
+          className="flex flex-col gap-4"
+        >
           <Input
             label={t('auth.email')}
             type="email"
@@ -86,32 +99,41 @@ export function SignIn() {
             hint={t('auth.subtitle')}
           />
           <Button type="submit" size="lg" block loading={busy} disabled={!email.includes('@')}>
-            {t('auth.sendCode')}
+            {t('auth.sendLink')}
           </Button>
         </form>
       ) : (
-        <form onSubmit={verify} className="flex flex-col gap-4">
-          <p className="text-center text-ink-2">{t('auth.codeSent', { email })}</p>
-          <Input
-            label={t('auth.codeLabel')}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            required
-            maxLength={6}
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-            error={error ?? undefined}
-            hint={t('auth.codeHint')}
-            className="text-center text-2xl tracking-[0.4em]"
-          />
-          <Button type="submit" size="lg" block loading={busy} disabled={code.length < 6}>
-            {t('auth.verify')}
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl bg-accent-soft px-4 py-5 text-center">
+            <p className="text-3xl" aria-hidden="true">✉️</p>
+            <p className="mt-2 font-semibold text-ink">{t('auth.sentTitle')}</p>
+            <p className="mt-1 text-sm text-ink-2">{t('auth.sentText', { email })}</p>
+          </div>
+          <p className="text-center text-sm text-ink-3">{t('auth.sentHint')}</p>
+
+          {error && <p className="text-center text-sm text-danger">{error}</p>}
+
+          <Button
+            variant="secondary"
+            block
+            loading={busy}
+            disabled={cooldown > 0}
+            onClick={() => void requestLink(email.trim())}
+          >
+            {cooldown > 0 ? t('auth.resendIn', { seconds: cooldown }) : t('auth.resend')}
           </Button>
-          <Button variant="ghost" block onClick={() => { setStep('email'); setCode(''); setError(null); }}>
+
+          <Button
+            variant="ghost"
+            block
+            onClick={() => {
+              setStep('email');
+              setError(null);
+            }}
+          >
             {t('auth.changeEmail')}
           </Button>
-        </form>
+        </div>
       )}
 
       {step === 'email' && (
