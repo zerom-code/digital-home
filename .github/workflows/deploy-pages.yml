@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# Раздача статики: клиент ходит в Supabase напрямую, серверная часть не
+# нужна, поэтому достаточно собрать dist/ и опубликовать (docs/09-setup.md).
+on:
+  push:
+    branches: [claude/apartment-management-pwa-n4thx8]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Новый пуш отменяет ещё не завершившийся деплой — незачем публиковать
+# устаревшую сборку поверх свежей
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Собрать приложение
+        run: npm run build
+        env:
+          # anon-ключ Supabase публичный по замыслу — защиту даёт RLS в базе,
+          # а не секретность ключа (docs/02-data-model.md), поэтому его не
+          # страшно печь в статический бандл. VITE_SUPABASE_URL и
+          # VITE_SUPABASE_ANON_KEY всё равно берём из секретов репозитория,
+          # чтобы значения не были разбросаны по конфигам — задать один раз в
+          # Settings → Secrets and variables → Actions.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

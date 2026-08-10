@@ -24,9 +24,15 @@ declare const self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-// SPA: любой маршрут отдаём на index.html, иначе прямая ссылка на вещь
-// в офлайне покажет ошибку вместо приложения
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+// SPA: любой переход отдаём на index.html. С хэш-роутером (main.tsx) сервер
+// вообще не видит «глубоких» путей вроде /item/abc — всё после # остаётся
+// только в браузере, — но фолбэк оставляем как страховку на полную
+// перезагрузку офлайн. import.meta.env.BASE_URL — тот же basePath из
+// vite.config.ts, подставленный сборкой (для GitHub Pages это /digital-home/,
+// иначе '/').
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL(`${import.meta.env.BASE_URL}index.html`))
+);
 
 // Фотографии из Storage: показываем из кеша, обновляем в фоне.
 // Данные из Postgres здесь не трогаем — ими занимается TanStack Query
@@ -59,6 +65,19 @@ interface PushPayload {
   tag?: string;
 }
 
+/**
+ * queue_task_notifications() в базе кладёт в notifications.url обычный
+ * логический путь вида «/item/abc123» — так его проще собрать SQL-строкой,
+ * и таблица ничего не должна знать о том, что фронтенд живёт за
+ * хэш-роутером. Настоящий адрес для навигации собираем здесь: путь после
+ * «#» на URL текущего скоупа. self.registration.scope уже учитывает и
+ * origin, и базовый путь (на GitHub Pages это .../digital-home/) — фрагмент
+ * заменяет только хэш, остальное берётся из скоупа как есть.
+ */
+function toAppUrl(path: string): string {
+  return new URL(`#${path}`, self.registration.scope).href;
+}
+
 self.addEventListener('push', (event) => {
   let payload: PushPayload = { title: 'Домовой' };
 
@@ -72,12 +91,12 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body ?? '',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: `${import.meta.env.BASE_URL}icons/icon-192.png`,
+      badge: `${import.meta.env.BASE_URL}icons/icon-192.png`,
       // tag с id уведомления: повторная доставка заменит старое, а не
       // насыпет три одинаковых
       tag: payload.tag ?? 'domovoy',
-      data: { url: payload.url ?? '/' },
+      data: { url: toAppUrl(payload.url ?? '/') },
       lang: 'ru',
     })
   );
@@ -85,7 +104,8 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = (event.notification.data as { url?: string })?.url ?? '/';
+  // url в data уже полный адрес — его собрал toAppUrl() в обработчике push
+  const target = (event.notification.data as { url?: string })?.url ?? self.registration.scope;
 
   event.waitUntil(
     (async () => {

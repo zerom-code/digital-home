@@ -6,7 +6,14 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// GitHub Pages отдаёт проект не с корня домена, а с /<repo>/. VITE_BASE_PATH
+// задаёт CI только для этой сборки (docs/09-setup.md); при обычном запуске
+// (VPS, локально) переменная не задана, и приложение живёт в корне, как раньше.
+const basePath = process.env.VITE_BASE_PATH || '/';
+
 export default defineConfig({
+  base: basePath,
+
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -37,18 +44,21 @@ export default defineConfig({
         description: 'Вся техника, гарантии, инструкции и расходы дома — в одном месте',
         lang: 'ru',
         dir: 'ltr',
-        start_url: '/',
-        scope: '/',
+        start_url: basePath,
+        scope: basePath,
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#f4f6f2',
         theme_color: '#1b6e4a',
         categories: ['productivity', 'utilities', 'lifestyle'],
+        // Явно через basePath, а не полагаемся на то, что плагин сам
+        // подставит base под путями иконок — не хочу зависеть от того,
+        // меняется ли это поведение между версиями
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: `${basePath}icons/icon-192.png`, sizes: '192x192', type: 'image/png' },
+          { src: `${basePath}icons/icon-512.png`, sizes: '512x512', type: 'image/png' },
           {
-            src: '/icons/icon-maskable-512.png',
+            src: `${basePath}icons/icon-maskable-512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

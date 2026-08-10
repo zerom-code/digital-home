@@ -45,6 +45,9 @@ describe('parseInviteCode', () => {
   });
 
   it('достаёт код из вставленной ссылки', () => {
+    // Текущий формат — за хэш-роутером (ADR-017)
+    expect(parseInviteCode('https://domovoy.app/#/join/DHKM7PQR')).toBe('DHKM7PQR');
+    // Прежний формат без хэша — старые уже разосланные ссылки не должны сломаться
     expect(parseInviteCode('https://domovoy.app/join/DHKM7PQR')).toBe('DHKM7PQR');
     expect(parseInviteCode('https://domovoy.app/j?code=DHKM7PQR&utm=tg')).toBe('DHKM7PQR');
   });
@@ -73,15 +76,20 @@ describe('formatInviteCode', () => {
 });
 
 describe('inviteUrl', () => {
-  it('склеивает ссылку', () => {
+  it('склеивает ссылку через хэш-роутер', () => {
     expect(inviteUrl('DHKM7PQR', 'https://domovoy.app')).toBe(
-      'https://domovoy.app/join/DHKM7PQR'
+      'https://domovoy.app/#/join/DHKM7PQR'
     );
   });
 
   it('не удваивает слэш', () => {
     expect(inviteUrl('DHKM7PQR', 'https://domovoy.app/')).toBe(
-      'https://domovoy.app/join/DHKM7PQR'
+      'https://domovoy.app/#/join/DHKM7PQR'
     );
+  });
+
+  it('сама себя разбирает обратно', () => {
+    const url = inviteUrl('DHKM7PQR', 'https://domovoy.app');
+    expect(parseInviteCode(url)).toBe('DHKM7PQR');
   });
 });

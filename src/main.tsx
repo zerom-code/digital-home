@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
 import './index.css';
@@ -27,9 +27,14 @@ createRoot(root).render(
         persistOptions={{ persister, buster: CACHE_BUSTER, maxAge: 7 * 24 * 60 * 60 * 1000 }}
       >
         <ToastProvider>
-          <BrowserRouter>
+          {/* HashRouter, а не BrowserRouter (ADR-017): GitHub Pages не умеет
+              доигрывать прямые ссылки вида /item/abc — 404 на сервере.
+              С хэшем (/#/item/abc) сервер вообще не видит внутренних путей,
+              всё решает браузер. Не конфликтует со входом по почте — PKCE
+              (lib/supabase/client.ts) кладёт код в ?code=, а не в #. */}
+          <HashRouter>
             <App />
-          </BrowserRouter>
+          </HashRouter>
         </ToastProvider>
       </PersistQueryClientProvider>
     </ErrorBoundary>

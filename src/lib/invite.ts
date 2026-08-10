@@ -45,7 +45,8 @@ export function parseInviteCode(input: string): string | null {
 
   let raw = input.trim();
 
-  // Вставили ссылку целиком: /join/DHKM7PQR или ?code=DHKM7PQR
+  // Вставили ссылку целиком: /#/join/DHKM7PQR (текущий формат, ADR-017),
+  // /join/DHKM7PQR (старые ссылки без хэш-роутера) или ?code=DHKM7PQR
   const fromUrl = raw.match(/(?:code=|\/join\/)([^&/?#\s]+)/i);
   if (fromUrl?.[1]) raw = fromUrl[1];
 
@@ -70,7 +71,13 @@ export function formatInviteCode(code: string): string {
   return groups.join('-');
 }
 
-/** Ссылка-приглашение, которую отправляют в мессенджере. */
+/**
+ * Ссылка-приглашение, которую отправляют в мессенджере.
+ *
+ * С «/#/» — приложение живёт за хэш-роутером (ADR-017), чтобы прямые
+ * ссылки работали и на GitHub Pages, который не умеет доигрывать пути на
+ * сервере.
+ */
 export function inviteUrl(code: string, appUrl: string): string {
-  return `${appUrl.replace(/\/$/, '')}/join/${code}`;
+  return `${appUrl.replace(/\/$/, '')}/#/join/${code}`;
 }

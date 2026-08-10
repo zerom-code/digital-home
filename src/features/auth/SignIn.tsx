@@ -23,6 +23,14 @@ const RESEND_COOLDOWN_S = 60;
  * адресной строки после перехода по ссылке — здесь дополнительный код не
  * нужен, ровно так же устроен вход через Google и Apple ниже.
  */
+
+// Куда вернуть после перехода по ссылке. window.location.origin один даёт
+// только домен без пути — на GitHub Pages потерялся бы /digital-home/ и
+// ссылка вела бы в никуда. import.meta.env.BASE_URL — тот же путь, что
+// подставлен в vite.config.ts (basePath), корень для VPS и /digital-home/
+// для сборки на GitHub Pages.
+const REDIRECT_URL = window.location.origin + import.meta.env.BASE_URL;
+
 export function SignIn() {
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>('email');
@@ -45,7 +53,7 @@ export function SignIn() {
       email: targetEmail,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: REDIRECT_URL,
       },
     });
 
@@ -69,7 +77,7 @@ export function SignIn() {
     setError(null);
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: REDIRECT_URL },
     });
     if (oauthError) setError(t('auth.errorGeneric'));
   }
