@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase/client';
 import { keys } from '@/lib/query/client';
+import { useSession } from '@/features/auth/useSession';
 import type { Household, HouseholdInvite, HouseholdMember, Profile, Role } from '@/lib/supabase/types';
 import { generateInviteCode } from '@/lib/invite';
 
@@ -22,10 +23,17 @@ export interface MembershipRow extends HouseholdMember {
   households: Household | null;
 }
 
-/** Семьи, в которых состоит пользователь, вместе с его ролью. */
-export function useMemberships() {
+/**
+ * Семьи, в которых состоит пользователь, вместе с его ролью.
+ *
+ * `enabled` приходит снаружи (useActiveHousehold) и стоит на паузе, пока
+ * сессия не подтверждена — см. комментарий там же про гонку на холодном
+ * старте.
+ */
+export function useMemberships(enabled = true) {
   return useQuery({
     queryKey: keys.households,
+    enabled,
     queryFn: async (): Promise<MembershipRow[]> => {
       const { data, error } = await supabase
         .from('household_members')
@@ -43,9 +51,30 @@ export function useMemberships() {
  *
  * Если сохранённой семьи больше нет (вышли или удалили), молча
  * переключаемся на первую доступную, а не показываем пустой экран.
+ *
+ * **Гонка на холодном старте.** App.tsx вызывает этот хук ещё до того, как
+ * `supabase-js` восстановит сессию из хранилища: восстановление асинхронное,
+ * а хуки должны звать одинаково при каждом рендере. Без явного ожидания
+ * запрос на household_members уходил бы раньше токена — под RLS это не
+ * ошибка, а честный пустой список, потому что не считается вошедшим никто.
+ * Offline-персистер (lib/query/client.ts) сохранял этот пустой список в
+ * IndexedDB как последний известный результат, а защёлка онбординга в
+ * App.tsx («семьи ещё нет — показать онбординг и не выходить обратно»)
+ * фиксировала это неверное состояние намертво: реальный дом лежал в базе
+ * невредимым, а приложение при каждом новом запуске снова просило создать
+ * его с нуля.
+ *
+ * Решение — держать запрос на паузе (`enabled: false`), пока не пришёл хотя
+ * бы один ответ от `supabase.auth.getSession()` или `onAuthStateChange`
+ * (useSession). Но TanStack в состоянии «пауза» сам показывает
+ * `isLoading: false` — будто уже всё загружено и семей нет, та же ловушка
+ * заново. Поэтому `isLoading` наружу считаем отдельно, включая в него и
+ * ожидание сессии.
  */
 export function useActiveHousehold() {
-  const memberships = useMemberships();
+  const { session, loading: sessionLoading } = useSession();
+  const sessionReady = !sessionLoading && Boolean(session);
+  const memberships = useMemberships(sessionReady);
 
   const stored = getActiveHouseholdId();
   const rows = memberships.data ?? [];
@@ -64,7 +93,7 @@ export function useActiveHousehold() {
     role: (active?.role ?? null) as Role | null,
     canWrite: active ? active.role !== 'guest' : false,
     isAdmin: active ? active.role === 'owner' || active.role === 'admin' : false,
-    isLoading: memberships.isLoading,
+    isLoading: !sessionReady || memberships.isLoading,
     error: memberships.error,
   };
 }

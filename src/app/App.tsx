@@ -84,9 +84,9 @@ export function App() {
   if (onboardingActive) {
     return (
       <Onboarding
-        onDone={() => {
+        onDone={(openAdd) => {
           setOnboardingActive(false);
-          setAdding(true);
+          if (openAdd) setAdding(true);
         }}
       />
     );

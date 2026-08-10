@@ -31,7 +31,11 @@ export function TabBar({ onAdd, canWrite }: Props) {
       // чтобы длинный список не сплющивал её вместо того, чтобы прокручиваться.
       // relative z-20 нужен из-за круглой кнопки: она торчит над панелью и
       // должна рисоваться поверх содержимого, которое под ней проезжает.
-      className="relative z-20 shrink-0 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)]"
+      // Отступ под неё — половина safe-area, не вся: место под жест «домой»
+      // остаётся, но иконки не висят высоко над низом экрана, как было при
+      // полном отступе (в PWA снизу нет ничего своего, что оправдывало бы
+      // такой зазор — это не Safari со строкой поиска).
+      className="relative z-20 shrink-0 border-t border-line bg-paper pb-[calc(env(safe-area-inset-bottom)/2)]"
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
         {tabs.slice(0, 2).map((tab) => (

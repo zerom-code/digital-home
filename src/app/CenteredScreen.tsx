@@ -18,15 +18,25 @@ interface Props {
  * Центрирование живёт на внутреннем блоке, а не на самом контейнере
  * прокрутки: `justify-center` у контейнера срезает верх содержимого, когда
  * оно длиннее окна, — до срезанного не домотать. Пара «контейнер прокрутки +
- * блок с min-h-full» даёт и то, и другое: по центру, пока помещается, и
- * прокрутку, когда нет.
+ * блок с посчитанной высотой» даёт и то, и другое: по центру, пока
+ * помещается, и прокрутку, когда нет.
+ *
+ * Высота блока — не `min-h-full`, а `calc(var(--app-h) - var(--kb-h))`
+ * (`.centered-screen-inner` в index.css). `--app-h` на время ввода
+ * заморожен (lib/viewport.ts), а видимая часть экрана — нет: над
+ * поднятой клавиатурой её реально меньше. Центрировать по замороженной
+ * высоте значит центрировать по прежним, уже не видимым границам —
+ * содержимое окажется выше середины видимой части, а под ним останется
+ * пустая полоса до самой клавиатуры.
  */
 export function CenteredScreen({ className = '', children }: Props) {
   return (
     // Отступ снизу — на самом контейнере прокрутки, а не на внутреннем блоке:
     // у того padding задаёт вызывающий, и утилиты передрались бы за него
     <main className="app-scroll h-full pb-[env(safe-area-inset-bottom)]">
-      <div className={`mx-auto flex min-h-full max-w-md flex-col justify-center px-6 ${className}`}>
+      <div
+        className={`centered-screen-inner mx-auto flex max-w-md flex-col justify-center px-6 ${className}`}
+      >
         {children}
       </div>
     </main>

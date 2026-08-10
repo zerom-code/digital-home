@@ -35,7 +35,12 @@ type Step = 'welcome' | 'name' | 'template' | 'done';
  * возможностях. Шаблон квартиры — главный выигрыш: шесть тапов, и дальше
  * человек правит готовое, а не создаёт с нуля (docs/04-ux.md).
  */
-export function Onboarding({ onDone }: { onDone: () => void }) {
+interface Props {
+  /** true — сразу открыть лист добавления вещи, false — просто на «Дом». */
+  onDone: (openAdd: boolean) => void;
+}
+
+export function Onboarding({ onDone }: Props) {
   const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -204,11 +209,11 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             <p className="mt-3 text-ink-2">{t('onboarding.readyText')}</p>
           </div>
           <Card className="p-1">
-            <Button size="lg" block onClick={onDone}>
+            <Button size="lg" block onClick={() => onDone(true)}>
               {t('onboarding.addFirst')}
             </Button>
           </Card>
-          <Button variant="ghost" block onClick={onDone}>
+          <Button variant="ghost" block onClick={() => onDone(false)}>
             {t('onboarding.later')}
           </Button>
         </>
