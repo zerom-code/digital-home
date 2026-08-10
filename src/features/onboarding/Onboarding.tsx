@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase/client';
 import { useCreateHousehold } from '@/features/household/useHousehold';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, Card, Input, useToast } from '@/components/ui';
 import type { HomeKind, SpaceKind } from '@/lib/supabase/types';
 import templatesData from '../../../data/apartment-templates.json';
 
@@ -36,6 +36,7 @@ type Step = 'welcome' | 'name' | 'template' | 'done';
  */
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const createHousehold = useCreateHousehold();
 
@@ -48,7 +49,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     try {
       const householdId = await createHousehold.mutateAsync(name.trim() || 'Квартира');
 
-      const { data: home } = await supabase
+      const { data: home, error: homeError } = await supabase
         .from('homes')
         .insert({
           household_id: householdId,
@@ -58,9 +59,11 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         .select()
         .single();
 
+      if (homeError) throw homeError;
+
       if (template && home) {
         // Комнаты создаём одним запросом, чтобы онбординг не тормозил
-        const { data: spaces } = await supabase
+        const { data: spaces, error: spacesError } = await supabase
           .from('spaces')
           .insert(
             template.rooms.map((room, index) => ({
@@ -74,6 +77,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           )
           .select();
 
+        if (spacesError) throw spacesError;
+
         if (spaces) {
           const byName = new Map(spaces.map((space) => [space.name, space.id]));
           const items = template.rooms.flatMap((room) =>
@@ -86,12 +91,21 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               sort_order: index * 10,
             }))
           );
-          if (items.length > 0) await supabase.from('items').insert(items);
+          if (items.length > 0) {
+            const { error: itemsError } = await supabase.from('items').insert(items);
+            if (itemsError) throw itemsError;
+          }
         }
       }
 
       await queryClient.invalidateQueries();
       setStep('done');
+    } catch (error) {
+      // Семья к этому моменту уже могла создаться — это нормально, важно не
+      // молчать про то, что комнаты и технику пришлось бы добавлять руками
+      console.error('Не удалось заполнить квартиру по шаблону:', error);
+      toast.show(t('onboarding.buildError'), { tone: 'danger' });
+      setStep('template');
     } finally {
       setBusy(false);
     }

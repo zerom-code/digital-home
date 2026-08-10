@@ -27,12 +27,32 @@ export function App() {
   const household = useActiveHousehold();
   const location = useLocation();
   const [adding, setAdding] = useState(false);
+  const [onboardingActive, setOnboardingActive] = useState(false);
 
   // Очередь отправки поднимается после входа: до него отправлять нечего и
   // некуда
   useEffect(() => {
     if (session) startSync();
   }, [session]);
+
+  // Онбординг «защёлкивается»: как только видим, что дома ещё нет, показываем
+  // его и не выходим обратно только потому, что household.householdId
+  // появился в кеше. createHousehold делает семью активной сразу после
+  // самого первого запроса — а онбордингу ещё нужно успеть создать комнаты и
+  // технику из шаблона и показать «Готово!». Без этой защёлки реактивность
+  // useActiveHousehold переключала бы на пустой «Дом» раньше, чем шаблон
+  // квартиры успевал построиться. На /join не включаем: там нет своего
+  // онбординга — человек входит в уже существующую семью.
+  useEffect(() => {
+    if (
+      !household.isLoading &&
+      !household.householdId &&
+      !onboardingActive &&
+      !location.pathname.startsWith('/join')
+    ) {
+      setOnboardingActive(true);
+    }
+  }, [household.isLoading, household.householdId, onboardingActive, location.pathname]);
 
   if (loading) return <Spinner label={t('common.loading')} />;
 
@@ -53,8 +73,15 @@ export function App() {
     );
   }
 
-  if (!household.householdId) {
-    return <Onboarding onDone={() => setAdding(true)} />;
+  if (onboardingActive) {
+    return (
+      <Onboarding
+        onDone={() => {
+          setOnboardingActive(false);
+          setAdding(true);
+        }}
+      />
+    );
   }
 
   return (
