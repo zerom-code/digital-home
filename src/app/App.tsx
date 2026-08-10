@@ -18,8 +18,10 @@ import { TasksScreen } from '@/features/tasks/TasksScreen';
 import { InstallCoach } from '@/features/pwa/InstallCoach';
 import { OfflineBanner, UpdateToast } from '@/features/pwa/StatusBanners';
 import { startSync } from '@/lib/outbox';
+import { decideScreen } from '@/lib/household-gate';
 import { TabBar } from './TabBar';
-import { EmptyState, Spinner } from '@/components/ui';
+import { CenteredScreen } from './CenteredScreen';
+import { Button, EmptyState, Spinner } from '@/components/ui';
 
 export function App() {
   const { t } = useTranslation();
@@ -43,24 +45,27 @@ export function App() {
     if (session) startSync();
   }, [session]);
 
-  // Онбординг «защёлкивается»: как только видим, что дома ещё нет, показываем
-  // его и не выходим обратно только потому, что household.householdId
-  // появился в кеше. createHousehold делает семью активной сразу после
-  // самого первого запроса — а онбордингу ещё нужно успеть создать комнаты и
-  // технику из шаблона и показать «Готово!». Без этой защёлки реактивность
-  // useActiveHousehold переключала бы на пустой «Дом» раньше, чем шаблон
-  // квартиры успевал построиться. На /join не включаем: там нет своего
-  // онбординга — человек входит в уже существующую семью.
+  const isJoining = location.pathname.startsWith('/join');
+
+  // Решение целиком в decideScreen (lib/household-gate.ts) — там же и тесты.
+  // Здесь важно только не звать её раньше хуков
+  const screen = decideScreen({
+    isConfirmed: household.isConfirmed,
+    hasHousehold: Boolean(household.householdId),
+    isLoading: household.isLoading,
+    hasError: Boolean(household.error),
+    isJoining,
+  });
+
+  // Онбординг «защёлкивается»: показав его, не выходим обратно только потому,
+  // что household.householdId появился в кеше. createHousehold делает семью
+  // активной сразу после самого первого запроса — а онбордингу ещё нужно
+  // успеть создать комнаты и технику из шаблона и показать «Готово!». Без
+  // защёлки реактивность useActiveHousehold переключала бы на пустой «Дом»
+  // раньше, чем шаблон квартиры успевал построиться.
   useEffect(() => {
-    if (
-      !household.isLoading &&
-      !household.householdId &&
-      !onboardingActive &&
-      !location.pathname.startsWith('/join')
-    ) {
-      setOnboardingActive(true);
-    }
-  }, [household.isLoading, household.householdId, onboardingActive, location.pathname]);
+    if (screen === 'onboarding' && !onboardingActive) setOnboardingActive(true);
+  }, [screen, onboardingActive]);
 
   if (loading) return <Spinner label={t('common.loading')} />;
 
@@ -68,11 +73,29 @@ export function App() {
   // сначала вход, а адрес /join/КОД сохранится и сработает следующим шагом
   if (!session) return <SignIn />;
 
-  if (household.isLoading) return <Spinner label={t('common.loading')} />;
+  if (screen === 'loading') return <Spinner label={t('common.loading')} />;
+
+  // Сервер не ответил, и показать нечего даже из кеша. Уйти отсюда в
+  // онбординг нельзя: дом, скорее всего, есть — просто до него не достучались,
+  // и «создать дом» завело бы второй поверх первого
+  if (screen === 'error') {
+    return (
+      <CenteredScreen className="items-center gap-4 py-10 text-center">
+        <EmptyState
+          icon="📡"
+          title={t('errors.loadFailed')}
+          text={t('errors.loadFailedHint')}
+          action={
+            <Button onClick={() => void household.refetch()}>{t('common.retry')}</Button>
+          }
+        />
+      </CenteredScreen>
+    );
+  }
 
   // Пришли по ссылке-приглашению — принимаем её раньше онбординга,
   // иначе человек создаст пустой второй дом вместо того, чтобы войти в общий
-  if (location.pathname.startsWith('/join')) {
+  if (isJoining) {
     return (
       <Routes>
         <Route path="/join" element={<JoinScreen />} />

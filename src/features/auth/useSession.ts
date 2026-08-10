@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase/client';
@@ -10,32 +10,57 @@ interface SessionState {
 }
 
 /**
- * Текущая сессия.
+ * Текущая сессия — один источник на всё приложение.
  *
- * Держим её в React-состоянии, а не в TanStack Query: сессию обновляет сам
- * supabase-js по таймеру, и второй источник правды тут только мешает.
+ * Держим её не в TanStack Query: сессию обновляет сам supabase-js по таймеру,
+ * и второй источник правды тут только мешает.
+ *
+ * Состояние вынесено из хука в модуль намеренно. Пока useSession звали из
+ * одного места, своя копия состояния у каждого вызова была просто лишней
+ * работой — свой getSession(), своя подписка. Но теперь готовность сессии
+ * спрашивает ещё и useActiveHousehold, а от этого ответа зависит, показать
+ * дом или предложить создать новый. Две независимые копии могли бы разойтись
+ * во мнении, и цена расхождения — предложение завести второй дом поверх
+ * существующего. Поэтому состояние общее, а хук только подписывается.
  */
-export function useSession(): SessionState {
-  const [state, setState] = useState<SessionState>({ session: null, loading: true });
+let state: SessionState = { session: null, loading: true };
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    let alive = true;
+function publish(next: SessionState): void {
+  state = next;
+  for (const listener of listeners) listener();
+}
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (alive) setState({ session: data.session, loading: false });
-    });
+// Восстановление сессии из хранилища асинхронное, и до его конца
+// пользователь ещё «не вошёл» с точки зрения любого запроса к базе
+let settled = false;
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (alive) setState({ session, loading: false });
-    });
+void supabase.auth.getSession().then(({ data }) => {
+  if (settled) return;
+  settled = true;
+  publish({ session: data.session, loading: false });
+});
 
-    return () => {
-      alive = false;
-      subscription.subscription.unsubscribe();
-    };
-  }, []);
+// Вход, выход и обновление токена по таймеру приходят сюда же и всегда
+// главнее разового getSession()
+supabase.auth.onAuthStateChange((_event, session) => {
+  settled = true;
+  publish({ session, loading: false });
+});
 
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot(): SessionState {
   return state;
+}
+
+export function useSession(): SessionState {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 /**
