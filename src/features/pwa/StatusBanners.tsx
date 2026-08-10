@@ -34,7 +34,9 @@ export function OfflineBanner() {
     return (
       <div
         role="status"
-        className="flex items-center justify-center gap-3 bg-danger-soft px-4 py-2 text-sm text-danger"
+        // shrink-0: полоска — строка нерастяжимого каркаса, и длинный
+        // список не должен её сплющивать вместо того, чтобы прокручиваться
+        className="flex shrink-0 items-center justify-center gap-3 bg-danger-soft px-4 py-2 text-sm text-danger"
       >
         <span aria-hidden="true">⚠</span>
         {t('outbox.stuck', { count: outbox.stuck })}
@@ -52,7 +54,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="flex items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-sm text-warn"
+      className="flex shrink-0 items-center justify-center gap-2 bg-warn-soft px-4 py-2 text-sm text-warn"
     >
       <span aria-hidden="true">{online ? '⏳' : '📴'}</span>
       {outbox.pending > 0 ? t('outbox.pending', { count: outbox.pending }) : t('pwa.offline')}
@@ -76,7 +78,8 @@ export function UpdateToast() {
   if (!needRefresh) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
+    // absolute по той же причине, что и у обычного тоста (components/ui/Toast.tsx)
+    <div className="absolute inset-x-0 bottom-24 z-50 flex justify-center px-4">
       <div className="flex w-full max-w-md items-center justify-between gap-3 rounded-xl bg-ink px-4 py-3 text-white shadow-lg">
         <span className="text-sm">{t('pwa.updateAvailable')}</span>
         <button

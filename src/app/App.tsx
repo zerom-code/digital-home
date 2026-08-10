@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +28,14 @@ export function App() {
   const location = useLocation();
   const [adding, setAdding] = useState(false);
   const [onboardingActive, setOnboardingActive] = useState(false);
+  const scroller = useRef<HTMLElement>(null);
+
+  // Прокрутка теперь своя у <main>, а не у страницы, и браузер сам её при
+  // переходе не сбросит: без этого карточка вещи открывалась бы с середины —
+  // ровно с того места, до которого был домотан список
+  useEffect(() => {
+    scroller.current?.scrollTo(0, 0);
+  }, [location.pathname]);
 
   // Очередь отправки поднимается после входа: до него отправлять нечего и
   // некуда
@@ -85,10 +93,13 @@ export function App() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
+    // Каркас ровно в высоту окна: он не растягивается содержимым, поэтому
+    // нижняя панель всегда на месте (index.css). Всё, что не влезло,
+    // прокручивается внутри <main>, а не двигает страницу целиком.
+    <div className="mx-auto flex h-full max-w-lg flex-col">
       <OfflineBanner />
 
-      <main className="flex-1">
+      <main ref={scroller} className="app-scroll min-h-0 flex-1">
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/room/:spaceId" element={<RoomScreen />} />

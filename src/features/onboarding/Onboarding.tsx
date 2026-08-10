@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { useCreateHousehold } from '@/features/household/useHousehold';
 import { Button, Card, Input, useToast } from '@/components/ui';
+import { CenteredScreen } from '@/app/CenteredScreen';
 import type { HomeKind, SpaceKind } from '@/lib/supabase/types';
 import templatesData from '../../../data/apartment-templates.json';
 
@@ -112,7 +113,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 px-6 py-10">
+    <CenteredScreen className="gap-8 py-10">
       {step === 'welcome' && (
         <>
           <div className="text-center">
@@ -212,6 +213,6 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           </Button>
         </>
       )}
-    </main>
+    </CenteredScreen>
   );
 }

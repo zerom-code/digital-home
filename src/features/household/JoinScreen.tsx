@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAcceptInvite } from './useHousehold';
 import { parseInviteCode } from '@/lib/invite';
 import { Button, Input, Spinner, useToast } from '@/components/ui';
+import { CenteredScreen } from '@/app/CenteredScreen';
 
 /**
  * Приём приглашения.
@@ -54,7 +55,7 @@ export function JoinScreen() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-6">
+    <CenteredScreen className="gap-6 py-10">
       <div className="text-center">
         <p className="text-5xl" aria-hidden="true">🔑</p>
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-ink">
@@ -92,6 +93,6 @@ export function JoinScreen() {
           {t('common.cancel')}
         </Button>
       </form>
-    </main>
+    </CenteredScreen>
   );
 }

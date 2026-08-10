@@ -1,6 +1,8 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 
+import { CenteredScreen } from './CenteredScreen';
+
 interface State {
   error: Error | null;
 }
@@ -26,7 +28,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
     if (!this.state.error) return this.props.children;
 
     return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-6 text-center">
+      <CenteredScreen className="items-center gap-4 py-10 text-center">
         <p className="text-5xl" aria-hidden="true">🛠</p>
         <h1 className="text-2xl font-bold text-ink">Что-то пошло не так</h1>
         <p className="text-ink-2">
@@ -39,7 +41,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
         >
           Обновить
         </button>
-      </main>
+      </CenteredScreen>
     );
   }
 }

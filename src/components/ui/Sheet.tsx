@@ -51,7 +51,10 @@ export function Sheet({ open, onClose, title, children }: Props) {
     <dialog
       ref={ref}
       aria-label={title}
-      className="m-0 mt-auto w-full sm:mx-auto sm:mb-auto sm:max-w-lg"
+      // Прижат к низу, ростом не выше окна и не под клавиатурой — всё это
+      // делает .sheet-dialog в index.css, потому что считать приходится
+      // через var(--app-h) и var(--kb-h)
+      className="sheet-dialog w-full sm:max-w-lg"
       onClick={(event) => {
         // Клик мимо содержимого — по самому <dialog>, а не по его детям
         if (event.target === ref.current) onClose();
@@ -59,7 +62,7 @@ export function Sheet({ open, onClose, title, children }: Props) {
     >
       <div
         className={
-          'flex max-h-[90dvh] flex-col rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] ' +
+          'flex min-h-0 flex-col rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] ' +
           'sm:rounded-2xl'
         }
       >

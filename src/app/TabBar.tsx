@@ -26,7 +26,12 @@ export function TabBar({ onAdd, canWrite }: Props) {
   return (
     <nav
       aria-label={t('app.name')}
-      className="sticky bottom-0 z-20 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      // Ни sticky, ни fixed: панель — последняя строка нерастяжимого каркаса
+      // (index.css), поэтому прижата к низу самой раскладкой. shrink-0 —
+      // чтобы длинный список не сплющивал её вместо того, чтобы прокручиваться.
+      // relative z-20 нужен из-за круглой кнопки: она торчит над панелью и
+      // должна рисоваться поверх содержимого, которое под ней проезжает.
+      className="relative z-20 shrink-0 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto flex max-w-lg items-stretch">
         {tabs.slice(0, 2).map((tab) => (

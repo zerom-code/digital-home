@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import './index.css';
 import './lib/i18n';
 import { queryClient, persister, CACHE_BUSTER } from './lib/query/client';
+import { installViewportMetrics } from './lib/viewport';
 import { ToastProvider } from './components/ui';
 import { ErrorBoundary } from './app/ErrorBoundary';
 import { App } from './app/App';
@@ -15,6 +16,10 @@ import { App } from './app/App';
 if (localStorage.getItem('domovoy.textSize') === 'large') {
   document.documentElement.dataset['textSize'] = 'large';
 }
+
+// Каркас держится на --app-h, поэтому мерить окно нужно до первой отрисовки:
+// иначе первый кадр придётся на запасное значение и интерфейс дёрнется
+installViewportMetrics();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Не найден #root');

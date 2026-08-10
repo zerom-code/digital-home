@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase/client';
 import { Button, Input } from '@/components/ui';
 import { detectPlatform, isStandalone } from '@/features/pwa/useInstallPrompt';
+import { CenteredScreen } from '@/app/CenteredScreen';
 
 /** Через сколько секунд после отправки можно попросить письмо ещё раз. */
 const RESEND_COOLDOWN_S = 60;
@@ -148,7 +149,7 @@ export function SignIn() {
   const emailValid = email.includes('@');
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 px-6 py-10">
+    <CenteredScreen className="gap-8 py-10">
       <header className="text-center">
         <p className="text-5xl" aria-hidden="true">🏠</p>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink">{t('app.name')}</h1>
@@ -280,6 +281,6 @@ export function SignIn() {
           </div>
         </>
       )}
-    </main>
+    </CenteredScreen>
   );
 }

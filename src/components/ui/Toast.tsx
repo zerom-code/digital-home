@@ -61,7 +61,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         // role=status, а не alert: тост сообщает результат, а не тревогу
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-4"
+        // absolute, а не fixed: fixed отмеряет низ от слоя разметки, а он на
+        // iOS уходит под панель Safari. Каркас приложения — это body ростом
+        // в var(--app-h) (index.css), и тост должен считать от него
+        className="pointer-events-none absolute inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-4"
       >
         {toasts.map((toast) => (
           <div

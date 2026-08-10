@@ -56,20 +56,51 @@
    =========================================================================== */
 
 html {
+  height: 100%;
   -webkit-text-size-adjust: 100%;
   /* Резиновый скролл всей страницы в standalone-режиме выглядит как баг */
   overscroll-behavior-y: none;
 }
 
+/* Каркас приложения.
+   Страница целиком не прокручивается: body — колонка ровно в высоту окна,
+   а прокрутка живёт внутри содержимого (.app-scroll). Отсюда главное —
+   нижней панели просто некуда уехать, её не приходится держать ни sticky,
+   ни fixed. С прокруткой всей страницы на iOS панель всё равно всплывала:
+   Safari показывает и прячет свои панели прямо во время инерционного
+   скролла, высота окна на ходу меняется, и низ на кадр-другой оказывается
+   за краем экрана.
+   Высоту окна меряет JS и кладёт в --app-h (lib/viewport.ts) — почему не
+   хватает 100dvh, написано там же. Все плавающие слои обязаны опираться
+   на ту же переменную, иначе разъедутся с каркасом. */
 body {
   margin: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  height: var(--app-h, 100%);
+  overflow: hidden;
+  overscroll-behavior-y: none;
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: var(--text-base);
   line-height: 1.5;
-  /* Нижняя панель не должна уезжать под системный индикатор iPhone */
-  padding-bottom: env(safe-area-inset-bottom);
+}
+
+#root {
+  height: 100%;
+}
+
+/* Единственное место, которое прокручивается. overscroll-behavior не даёт
+   докрутке уйти наружу — снаружи прокручивать всё равно нечего, но без него
+   iOS отвечает на это резиновым отскоком всего вебвью. */
+.app-scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Режим «Крупный текст» из настроек — не только системный масштаб */
@@ -114,5 +145,22 @@ dialog {
   padding: 0;
   background: transparent;
   max-width: 100vw;
-  max-height: 100dvh;
+}
+
+/* Лист прижат к низу окна и не ныряет под клавиатуру: и высоту окна, и
+   высоту клавиатуры меряет lib/viewport.ts. Правило висит на [open] не для
+   красоты — display в обычном `dialog` перебил бы `display: none`, которым
+   браузер прячет закрытый лист, и тот стал бы виден всегда. */
+.sheet-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  margin: auto 0 var(--kb-h, 0px);
+  max-height: calc(var(--app-h, 100dvh) - var(--kb-h, 0px));
+}
+
+/* На широком экране лист превращается в обычное окно по центру */
+@media (min-width: 40rem) {
+  .sheet-dialog[open] {
+    margin: auto;
+  }
 }
