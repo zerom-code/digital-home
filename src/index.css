@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+
+/* ===========================================================================
+   Токены оформления
+   Палитра из docs/04-ux.md: тёплый нейтральный фон с зелёным подтоном,
+   акцент — глубокий зелёный энергетической наклейки.
+   =========================================================================== */
+
+@theme {
+  --color-paper: #f4f6f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #ebeee8;
+  --color-ink: #16201a;
+  --color-ink-2: #46534b;
+  --color-ink-3: #6e7c73;
+  --color-line: #d3dad2;
+  --color-line-2: #bfc8be;
+  --color-accent: #1b6e4a;
+  --color-accent-ink: #125638;
+  --color-accent-soft: #ddebe1;
+  --color-warn: #9a6413;
+  --color-warn-soft: #f4e9d2;
+  --color-danger: #a8342b;
+  --color-danger-soft: #f6e2e0;
+
+  /* Базовый кегль крупнее обычного: приложением пользуется не только зумер */
+  --text-base: 1.0625rem;
+  --radius-card: 0.75rem;
+}
+
+/* Тёмная тема переопределяет значения переменных, а не объявляет тему заново:
+   @theme работает только на верхнем уровне, а утилиты Tailwind и так
+   ссылаются на var(--color-*), поэтому подмены значения достаточно. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #0f1411;
+    --color-surface: #161d18;
+    --color-surface-2: #1e2721;
+    --color-ink: #e3e9e2;
+    --color-ink-2: #a8b4ac;
+    --color-ink-3: #7c8a81;
+    --color-line: #2a342d;
+    --color-line-2: #3a463d;
+    --color-accent: #56b382;
+    --color-accent-ink: #8ed2aa;
+    --color-accent-soft: #1b2e24;
+    --color-warn: #d9a855;
+    --color-warn-soft: #2e2617;
+    --color-danger: #e08379;
+    --color-danger-soft: #2e1a18;
+  }
+}
+
+/* ===========================================================================
+   База
+   =========================================================================== */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Резиновый скролл всей страницы в standalone-режиме выглядит как баг */
+  overscroll-behavior-y: none;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  /* Нижняя панель не должна уезжать под системный индикатор iPhone */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Режим «Крупный текст» из настроек — не только системный масштаб */
+html[data-text-size='large'] {
+  font-size: 125%;
+}
+
+/* Фокус видно всегда: приложением пользуются и с внешней клавиатуры,
+   и со скринридером */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button,
+[role='button'],
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Bottom sheet на нативном <dialog>: без зависимостей и с бесплатной
+   поддержкой Esc, фокус-ловушки и inert для фона */
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: 100vw;
+  max-height: 100dvh;
+}

@@ -31,50 +31,84 @@ PWA, которая знает всё о квартире.
 
 ## Статус
 
-**Фаза 0 — проектирование.** Кода приложения пока нет; в репозитории лежит
-проработанный проект: смысл продукта, функциональность, модель данных с SQL,
-энергомодель с формулами, UX-правила, архитектура и дорожная карта.
+**Фаза 1 — каркас и ядро.** Работает: вход по коду на почту, семья с
+приглашениями по ссылке, дерево «дом → комната → вещь», карточка вещи со
+всеми полями (обязательное — только название), фотографии, поиск по всему
+дому, гарантии с обратным отсчётом, установка как PWA и чтение офлайн.
+
+Задачи, документы и энергия — следующие фазы, см.
+[docs/06-roadmap.md](docs/06-roadmap.md).
+
+## Запуск
+
+```bash
+cp .env.example .env      # заполнить VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY
+npm install
+npm run icons             # иконки для домашнего экрана
+npm run dev
+```
+
+Развёртывание с нуля, включая создание проекта Supabase и накат миграций, —
+в [docs/09-setup.md](docs/09-setup.md).
+
+### Команды
+
+| Команда | Что делает |
+|---|---|
+| `npm run dev` | Дев-сервер |
+| `npm run build` | Проверка типов и сборка в `dist/` |
+| `npm run typecheck` | Только типы |
+| `npm run test` | Юнит-тесты (vitest) |
+| `npm run icons` | Генерация PNG-иконок и favicon |
+| `npm run db:seed` | `data/categories.ru.json` → `supabase/seed/categories.sql` |
+| `npm run db:test` | Миграции и тесты RLS на локальном PostgreSQL |
+
+`npm run db:test` требует только PostgreSQL 16+ — ни Docker, ни стека
+Supabase: схемы `auth` и `storage` подменяет шим. Прогоняет 55 проверок
+изоляции семей, ролей, триггеров целостности и жизненного цикла приглашений.
+
+## Стек
+
+**Клиент:** Vite + React + TypeScript, Tailwind v4, TanStack Query с персистом
+в IndexedDB, vite-plugin-pwa (Workbox), i18next. Компоненты свои, на нативном
+HTML — почему так, в [ADR-013](docs/07-decisions.md).
+
+**Бэкенд:** Supabase — Postgres с Row Level Security, Auth, Storage, Realtime.
+RLS является единственным слоем авторизации: клиент ходит в базу напрямую.
+
+## Устройство репозитория
+
+```
+src/
+├── app/            роутинг, каркас, нижняя панель
+├── components/ui/  свой UI-кит
+├── features/       auth, household, home, items, search, onboarding, pwa, more
+└── lib/            supabase, query, i18n, поиск, дерево дома, гарантии
+
+supabase/
+├── migrations/     схема, RLS, RPC, хранилище
+├── seed/           справочник категорий (генерируется)
+└── tests/          шим Supabase и тесты изоляции семей
+
+data/               справочник техники и шаблоны квартир
+scripts/            генераторы seed и иконок, прогон тестов БД
+docs/               проектная документация
+```
 
 ## Документация
 
 | Документ | О чём |
 |---|---|
-| [00-vision.md](docs/00-vision.md) | Зачем это всё: проблема, аудитория, сценарии, чем продукт не является |
+| [00-vision.md](docs/00-vision.md) | Зачем это всё: проблема, аудитория, сценарии |
 | [01-features.md](docs/01-features.md) | Функциональность по уровням и приоритетам |
-| [02-data-model.md](docs/02-data-model.md) | Полная схема Postgres + Row Level Security |
-| [03-energy.md](docs/03-energy.md) | Расчёт энергопотребления: режимы ввода, формулы, тарифы |
-| [04-ux.md](docs/04-ux.md) | Информационная архитектура, экраны, правила интерфейса |
-| [05-architecture.md](docs/05-architecture.md) | Стек, офлайн-синхронизация, PWA на iOS и Android |
+| [02-data-model.md](docs/02-data-model.md) | Схема Postgres и Row Level Security |
+| [03-energy.md](docs/03-energy.md) | Расчёт энергопотребления: режимы, формулы, тарифы |
+| [04-ux.md](docs/04-ux.md) | Экраны и правила интерфейса |
+| [05-architecture.md](docs/05-architecture.md) | Стек, офлайн, PWA на iOS и Android |
 | [06-roadmap.md](docs/06-roadmap.md) | Фазы и критерии готовности |
 | [07-decisions.md](docs/07-decisions.md) | ADR: почему именно такие решения |
-| [08-ai.md](docs/08-ai.md) | ИИ-слой: сценарии, схемы извлечения, квоты, приватность |
-
-Справочник категорий техники с типовыми энергопараметрами:
-[`data/categories.ru.json`](data/categories.ru.json).
-
-## Планируемый стек
-
-**Клиент:** Vite + React + TypeScript, Tailwind + shadcn/ui, TanStack Query,
-Dexie (офлайн-очередь), vite-plugin-pwa (Workbox), react-hook-form + zod.
-
-**Бэкенд:** Supabase — Postgres с RLS, Auth, Storage, Realtime, Edge Functions,
-pg_cron, pgvector.
-
-**ИИ:** gpt-4o-mini через прокси в Edge Function — распознавание шильдиков и
-чеков, вопросы к инструкциям. Ключ никогда не попадает на клиент.
-
-Подробности и обоснование выбора — в [05-architecture.md](docs/05-architecture.md)
-и [07-decisions.md](docs/07-decisions.md).
-
-## Запуск
-
-Пока нечего запускать — идёт проектирование. Когда появится код (фаза 1):
-
-```bash
-cp .env.example .env      # заполнить VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY
-npm install
-npm run dev
-```
+| [08-ai.md](docs/08-ai.md) | ИИ-слой: сценарии, схемы, квоты, приватность |
+| [09-setup.md](docs/09-setup.md) | Развёртывание с нуля |
 
 ## Лицензия
 

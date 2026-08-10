@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover нужен, чтобы работали env(safe-area-inset-*),
+         иначе нижняя панель уезжает под индикатор iPhone -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="description" content="Вся техника, гарантии, инструкции и расходы дома — в одном месте" />
+
+    <title>Домовой — всё о квартире</title>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta name="theme-color" content="#1b6e4a" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1411" media="(prefers-color-scheme: dark)" />
+
+    <!-- Открытие с домашнего экрана на iOS: без этого запускается Safari
+         со всей его обвязкой, и приложение не выглядит приложением -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Домовой" />
+    <meta name="mobile-web-app-capable" content="yes" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <noscript>Для работы «Домового» нужен включённый JavaScript.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

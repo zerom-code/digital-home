@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "_about": "Шаблоны для онбординга. Создают комнаты и типовые заглушки техники, чтобы человек правил готовое, а не заполнял пустоту — редактировать психологически легче, чем создавать (docs/01-features.md).",
+
+  "templates": [
+    {
+      "id": "studio",
+      "name": "1-комнатная",
+      "icon": "🏢",
+      "homeKind": "apartment",
+      "rooms": [
+        {
+          "name": "Кухня", "kind": "kitchen", "icon": "🍳",
+          "items": [
+            { "name": "Холодильник", "category_id": "kitchen.fridge" },
+            { "name": "Плита", "category_id": "kitchen.stove" },
+            { "name": "Вытяжка", "category_id": "kitchen.hood" },
+            { "name": "Микроволновка", "category_id": "kitchen.microwave" },
+            { "name": "Электрочайник", "category_id": "kitchen.kettle" }
+          ]
+        },
+        {
+          "name": "Комната", "kind": "living", "icon": "🛋",
+          "items": [
+            { "name": "Телевизор", "category_id": "electronics.tv" },
+            { "name": "Роутер", "category_id": "electronics.router" },
+            { "name": "Диван", "category_id": "furniture.sofa" }
+          ]
+        },
+        {
+          "name": "Ванная", "kind": "bath", "icon": "🛁",
+          "items": [
+            { "name": "Стиральная машина", "category_id": "laundry.washer" },
+            { "name": "Бойлер", "category_id": "water.boiler" }
+          ]
+        },
+        {
+          "name": "Прихожая", "kind": "hallway", "icon": "🚪",
+          "items": [
+            { "name": "Электрощиток", "category_id": "safety.electrical_panel" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "two-room",
+      "name": "2-комнатная",
+      "icon": "🏬",
+      "homeKind": "apartment",
+      "rooms": [
+        {
+          "name": "Кухня", "kind": "kitchen", "icon": "🍳",
+          "items": [
+            { "name": "Холодильник", "category_id": "kitchen.fridge" },
+            { "name": "Плита", "category_id": "kitchen.stove" },
+            { "name": "Духовка", "category_id": "kitchen.oven" },
+            { "name": "Вытяжка", "category_id": "kitchen.hood" },
+            { "name": "Посудомоечная машина", "category_id": "kitchen.dishwasher" },
+            { "name": "Микроволновка", "category_id": "kitchen.microwave" },
+            { "name": "Электрочайник", "category_id": "kitchen.kettle" }
+          ]
+        },
+        {
+          "name": "Гостиная", "kind": "living", "icon": "🛋",
+          "items": [
+            { "name": "Телевизор", "category_id": "electronics.tv" },
+            { "name": "Роутер", "category_id": "electronics.router" },
+            { "name": "Диван", "category_id": "furniture.sofa" },
+            { "name": "Кондиционер", "category_id": "climate.ac" }
+          ]
+        },
+        {
+          "name": "Спальня", "kind": "bedroom", "icon": "🛏",
+          "items": [
+            { "name": "Кровать", "category_id": "furniture.bed" },
+            { "name": "Шкаф", "category_id": "furniture.wardrobe" }
+          ]
+        },
+        {
+          "name": "Ванная", "kind": "bath", "icon": "🛁",
+          "items": [
+            { "name": "Стиральная машина", "category_id": "laundry.washer" },
+            { "name": "Бойлер", "category_id": "water.boiler" },
+            { "name": "Полотенцесушитель", "category_id": "climate.towel_dryer" }
+          ]
+        },
+        {
+          "name": "Прихожая", "kind": "hallway", "icon": "🚪",
+          "items": [
+            { "name": "Пылесос", "category_id": "laundry.vacuum" },
+            { "name": "Электрощиток", "category_id": "safety.electrical_panel" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "house",
+      "name": "Свой дом",
+      "icon": "🏡",
+      "homeKind": "house",
+      "rooms": [
+        {
+          "name": "Кухня", "kind": "kitchen", "icon": "🍳",
+          "items": [
+            { "name": "Холодильник", "category_id": "kitchen.fridge" },
+            { "name": "Морозильная камера", "category_id": "kitchen.freezer" },
+            { "name": "Плита", "category_id": "kitchen.stove" },
+            { "name": "Духовка", "category_id": "kitchen.oven" },
+            { "name": "Посудомоечная машина", "category_id": "kitchen.dishwasher" },
+            { "name": "Вытяжка", "category_id": "kitchen.hood" }
+          ]
+        },
+        {
+          "name": "Гостиная", "kind": "living", "icon": "🛋",
+          "items": [
+            { "name": "Телевизор", "category_id": "electronics.tv" },
+            { "name": "Роутер", "category_id": "electronics.router" }
+          ]
+        },
+        {
+          "name": "Спальня", "kind": "bedroom", "icon": "🛏",
+          "items": [{ "name": "Кровать", "category_id": "furniture.bed" }]
+        },
+        {
+          "name": "Ванная", "kind": "bath", "icon": "🛁",
+          "items": [
+            { "name": "Стиральная машина", "category_id": "laundry.washer" },
+            { "name": "Сушильная машина", "category_id": "laundry.dryer" }
+          ]
+        },
+        {
+          "name": "Котельная", "kind": "storage", "icon": "🔥",
+          "items": [
+            { "name": "Газовый котёл", "category_id": "water.gas_boiler" },
+            { "name": "Насос", "category_id": "water.pump" },
+            { "name": "Магистральный фильтр", "category_id": "water.filter_main" },
+            { "name": "Вентиль перекрытия воды", "category_id": "safety.water_valve" }
+          ]
+        },
+        {
+          "name": "Гараж", "kind": "garage", "icon": "🚗",
+          "items": [
+            { "name": "Автомобиль", "category_id": "outdoor.car" },
+            { "name": "Газонокосилка", "category_id": "outdoor.lawnmower" },
+            { "name": "Набор инструментов", "category_id": "tools.toolbox" }
+          ]
+        }
+      ]
+    }
+  ]
+}
