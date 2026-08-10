@@ -185,9 +185,106 @@ export interface Task {
   deleted_at: string | null;
 }
 
+export interface Consumable {
+  id: string;
+  household_id: string;
+  item_id: string | null;
+  name: string | null;
+  part_number: string | null;
+  interval_days: number | null;
+  last_replaced_at: string | null;
+  next_due_at: string | null;
+  qty_in_stock: number | null;
+  shop_url: string | null;
+  price: number | null;
+  currency: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface ServiceRecord {
+  id: string;
+  household_id: string;
+  item_id: string;
+  kind: 'repair' | 'maintenance' | 'install' | 'inspection' | null;
+  performed_at: string | null;
+  contact_id: string | null;
+  cost: number | null;
+  currency: string | null;
+  description: string | null;
+  next_due_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface PushSubscriptionRow {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  user_agent: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  failed_at: string | null;
+}
+
+export interface NotificationRow {
+  id: string;
+  household_id: string;
+  user_id: string | null;
+  task_id: string | null;
+  title: string;
+  body: string | null;
+  url: string | null;
+  status: 'queued' | 'sent' | 'failed' | 'skipped';
+  attempts: number;
+  error: string | null;
+  send_after: string;
+  sent_at: string | null;
+  created_at: string;
+}
+
+export interface AiSettings {
+  household_id: string;
+  enabled: boolean;
+  monthly_limit_usd: number;
+  consent_at: string | null;
+  consent_by: string | null;
+}
+
 export interface Database {
   public: {
     Tables: {
+      consumables: {
+        Row: Consumable;
+        Insert: Insertable<Consumable, 'household_id'>;
+        Update: Updatable<Consumable>;
+      };
+      service_records: {
+        Row: ServiceRecord;
+        Insert: Insertable<ServiceRecord, 'household_id' | 'item_id'>;
+        Update: Updatable<ServiceRecord>;
+      };
+      push_subscriptions: {
+        Row: PushSubscriptionRow;
+        Insert: Insertable<PushSubscriptionRow, 'user_id' | 'endpoint' | 'p256dh' | 'auth_key'>;
+        Update: Updatable<PushSubscriptionRow>;
+      };
+      notifications: {
+        Row: NotificationRow;
+        Insert: Insertable<NotificationRow, 'household_id' | 'title'>;
+        Update: Updatable<NotificationRow>;
+      };
+      ai_settings: {
+        Row: AiSettings;
+        Insert: Insertable<AiSettings, 'household_id'>;
+        Update: Updatable<AiSettings>;
+      };
       profiles: {
         Row: Profile;
         Insert: Insertable<Profile, 'id'>;
@@ -252,6 +349,10 @@ export interface Database {
       search_items: {
         Args: { p_query: string };
         Returns: Item[];
+      };
+      refresh_my_tasks: {
+        Args: Record<string, never>;
+        Returns: number;
       };
     };
     Enums: Record<string, never>;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -14,8 +14,10 @@ import { SearchScreen } from '@/features/search/SearchScreen';
 import { HouseholdScreen } from '@/features/household/HouseholdScreen';
 import { JoinScreen } from '@/features/household/JoinScreen';
 import { MoreScreen } from '@/features/more/MoreScreen';
+import { TasksScreen } from '@/features/tasks/TasksScreen';
 import { InstallCoach } from '@/features/pwa/InstallCoach';
 import { OfflineBanner, UpdateToast } from '@/features/pwa/StatusBanners';
+import { startSync } from '@/lib/outbox';
 import { TabBar } from './TabBar';
 import { EmptyState, Spinner } from '@/components/ui';
 
@@ -25,6 +27,12 @@ export function App() {
   const household = useActiveHousehold();
   const location = useLocation();
   const [adding, setAdding] = useState(false);
+
+  // Очередь отправки поднимается после входа: до него отправлять нечего и
+  // некуда
+  useEffect(() => {
+    if (session) startSync();
+  }, [session]);
 
   if (loading) return <Spinner label={t('common.loading')} />;
 
@@ -63,7 +71,7 @@ export function App() {
           <Route path="/join" element={<JoinScreen />} />
           <Route path="/more" element={<MoreScreen />} />
 
-          <Route path="/tasks" element={<ComingSoon icon="✅" title={t('tabs.tasks')} />} />
+          <Route path="/tasks" element={<TasksScreen />} />
           <Route path="/energy" element={<ComingSoon icon="⚡" title={t('tabs.energy')} />} />
 
           <Route path="/404" element={<NotFound />} />

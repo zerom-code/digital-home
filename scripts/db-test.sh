@@ -52,12 +52,14 @@ echo "▸ справочник категорий"
 node "$ROOT/scripts/build-seed.mjs"
 apply supabase/seed/categories.sql
 
-echo "▸ тесты RLS"
-if ! psql_run -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/rls_test.sql" 2>&1 |
-     sed -e 's/^psql:[^ ]*: NOTICE:  //' -e 's/^NOTICE:  //'; then
-  echo "ТЕСТЫ ПРОВАЛЕНЫ"
-  exit 1
-fi
+echo "▸ тесты"
+for suite in rls_test phase2_test; do
+  if ! psql_run -v ON_ERROR_STOP=1 -q -d "$DB" -f "$ROOT/supabase/tests/$suite.sql" 2>&1 |
+       sed -e 's/^psql:[^ ]*: NOTICE:  //' -e 's/^NOTICE:  //'; then
+    echo "ТЕСТЫ ПРОВАЛЕНЫ: $suite"
+    exit 1
+  fi
+done
 
 if [ "$KEEP" = "1" ]; then
   echo "база $DB оставлена"

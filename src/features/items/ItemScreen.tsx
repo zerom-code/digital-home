@@ -8,6 +8,8 @@ import { computeWarranty, describeWarranty } from '@/lib/warranty';
 import type { Item } from '@/lib/supabase/types';
 import { Button, Card, Chip, EmptyState, InviteBlock, Input, Select, Sheet, Spinner, Textarea, useToast } from '@/components/ui';
 import { PageHeader } from '@/app/PageHeader';
+import { DocumentsBlock } from '@/features/documents/DocumentsBlock';
+import { NameplateSheet } from '@/features/ai/NameplateSheet';
 import { useSignedPhoto } from './ItemCard';
 
 /**
@@ -29,6 +31,7 @@ export function ItemScreen() {
   const { remove, restore } = useDeleteItem(householdId);
 
   const [editing, setEditing] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   if (item.isLoading) return <Spinner label={t('common.loading')} />;
   if (!item.data) {
@@ -133,16 +136,28 @@ export function ItemScreen() {
           </Card>
         )}
 
+        {/* Распознавание таблички: восемь полей ручного ввода в один тап */}
+        {canWrite && !value.model && (
+          <InviteBlock
+            icon="✨"
+            title={t('ai.nameplateTitle')}
+            text={t('ai.nameplateHint')}
+            action={
+              <Button variant="secondary" onClick={() => setScanning(true)}>
+                📷 {t('ai.takePhoto')}
+              </Button>
+            }
+          />
+        )}
+
         <Facts item={value} />
 
-        {/* Блоки следующих фаз показываем честно: не пустыми, а с объяснением */}
-        <InviteBlock
-          icon="📄"
-          title={t('item.documentsEmptyTitle')}
-          text={t('item.documentsEmptyText')}
-        />
+        {householdId && (
+          <DocumentsBlock itemId={value.id} householdId={householdId} canWrite={canWrite} />
+        )}
+
+        {/* Энергия — фаза 3. Показываем честно, а не прячем */}
         <InviteBlock icon="⚡" title={t('item.energyEmptyTitle')} text={t('item.energyEmptyText')} />
-        <InviteBlock icon="🔧" title={t('item.serviceEmptyTitle')} text={t('item.serviceEmptyText')} />
 
         {canWrite && (
           <Button variant="danger" block onClick={() => void handleDelete()}>
@@ -150,6 +165,15 @@ export function ItemScreen() {
           </Button>
         )}
       </div>
+
+      {householdId && (
+        <NameplateSheet
+          open={scanning}
+          onClose={() => setScanning(false)}
+          householdId={householdId}
+          onApply={(patch) => update.mutateAsync({ id: value.id, patch }).then(() => undefined)}
+        />
+      )}
 
       <EditSheet
         open={editing}

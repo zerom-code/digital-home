@@ -18,6 +18,12 @@ export default defineConfig({
     tailwindcss(),
 
     VitePWA({
+      // injectManifest, а не generateSW: нужны свои обработчики push и
+      // notificationclick, а сгенерированный воркер их не поддерживает
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+
       // Обновление показываем тостом, а не перезагружаем страницу под руками
       // у человека, который в этот момент заполняет форму (docs/05-architecture.md)
       registerType: 'prompt',
@@ -50,27 +56,11 @@ export default defineConfig({
         ],
       },
 
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallback: '/index.html',
-        cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            // Фотографии вещей из Storage: сначала кеш, обновление в фоне.
-            // Данные из Postgres здесь не кешируем — этим занимается
-            // TanStack Query с персистом в IndexedDB.
-            urlPattern: ({ url }) => url.pathname.includes('/storage/v1/object/'),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'domovoy-photos',
-              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
 
-      devOptions: { enabled: false },
+      devOptions: { enabled: false, type: 'module' },
     }),
   ],
 
