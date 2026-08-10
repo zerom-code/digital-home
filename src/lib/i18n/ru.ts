@@ -46,6 +46,22 @@ export const ru = {
       subtitle: 'Пришлём ссылку на почту — пароль не нужен',
       email: 'Почта',
       emailPlaceholder: 'you@example.com',
+
+      password: 'Пароль',
+      passwordHint: 'Минимум 6 символов',
+      signIn: 'Войти',
+      signUp: 'Создать аккаунт',
+      noAccount: 'Ещё нет аккаунта? Создать',
+      haveAccount: 'Уже есть аккаунт? Войти',
+      useLink: 'Войти по ссылке на почту',
+      usePassword: 'Войти по паролю',
+      linkIosWarning:
+        'На iPhone ссылка из письма откроется в Safari — в установленном приложении вход по паролю надёжнее',
+      confirmEmailNotice: 'Проверь почту и подтверди адрес — потом входи по паролю',
+      errorWrongPassword: 'Почта или пароль не подошли',
+      errorWeakPassword: 'Пароль слишком короткий — нужно хотя бы 6 символов',
+      errorAlreadyRegistered: 'Такой аккаунт уже есть — введи пароль и войди',
+
       sendLink: 'Прислать ссылку',
       sentTitle: 'Проверь почту',
       sentText: 'Отправили письмо на {{email}}. Открой его и нажми «Sign in» — вернёшься сюда уже в приложении.',
