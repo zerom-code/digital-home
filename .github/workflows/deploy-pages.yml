@@ -27,9 +27,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - run: npm ci
+      # npm install, а не npm ci, и без cache: npm выше — оба требуют
+      # package-lock.json, а его нет в репозитории: npm install ни разу не
+      # запускался в среде разработки (реестр был недоступен), лок-файл
+      # негде было сгенерировать. npm install работает и без него.
+      - run: npm install
 
       - name: Собрать приложение
         run: npm run build
