@@ -51,7 +51,14 @@ export function SignIn() {
 
     setBusy(false);
     if (sendError) {
-      setError(t('auth.errorEmail'));
+      // Раньше здесь всегда показывалось «проверь адрес», даже если дело
+      // не в адресе вовсе — например, в исчерпанный лимит писем на
+      // бесплатном плане (после нескольких запросов подряд за короткое
+      // время). Различаем по коду ответа: 429 — это лимит, а не опечатка.
+      console.error('Не удалось отправить ссылку для входа:', sendError);
+      const rateLimited =
+        sendError.status === 429 || /rate limit|too many|after \d+ seconds/i.test(sendError.message);
+      setError(rateLimited ? t('auth.errorRateLimit') : t('auth.errorEmail'));
       return;
     }
     setStep('sent');
