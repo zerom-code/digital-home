@@ -115,13 +115,20 @@ export function usePush() {
   return { state, busy, enable, disable, refresh: detect };
 }
 
-/** VAPID-ключ приходит в base64url, а applicationServerKey ждёт байты. */
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+/**
+ * VAPID-ключ приходит в base64url, а applicationServerKey ждёт байты.
+ *
+ * Возвращаемый тип уточнён до `Uint8Array<ArrayBuffer>`: начиная с TS 5.7
+ * Uint8Array параметризован буфером, и обычный `Uint8Array` (то есть
+ * `Uint8Array<ArrayBufferLike>`) под BufferSource уже не подходит —
+ * из-за возможного SharedArrayBuffer.
+ */
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const normalized = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(normalized);
 
-  const output = new Uint8Array(raw.length);
+  const output = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
   return output;
 }

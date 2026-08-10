@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { useCreateHousehold } from '@/features/household/useHousehold';
 import { Button, Card, Input } from '@/components/ui';
+import type { HomeKind, SpaceKind } from '@/lib/supabase/types';
 import templatesData from '../../../data/apartment-templates.json';
 
 interface TemplateRoom {
@@ -52,7 +53,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         .insert({
           household_id: householdId,
           name: name.trim() || 'Квартира',
-          kind: (template?.homeKind ?? 'apartment') as 'apartment',
+          kind: (template?.homeKind ?? 'apartment') as HomeKind,
         })
         .select()
         .single();
@@ -66,7 +67,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               household_id: householdId,
               home_id: home.id,
               name: room.name,
-              kind: room.kind as 'kitchen',
+              kind: room.kind as SpaceKind,
               icon: room.icon,
               sort_order: index * 10,
             }))

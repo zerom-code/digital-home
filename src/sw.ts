@@ -14,7 +14,11 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
  * не перейти.
  */
 
-declare const self: ServiceWorkerGlobalScope;
+// __WB_MANIFEST объявляем сами, а не полагаемся на типы плагина: так сборка
+// не зависит от того, какой из его type-entry подключён в tsconfig
+declare const self: ServiceWorkerGlobalScope & {
+  __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
 
 // Список файлов оболочки подставляет vite-plugin-pwa при сборке
 precacheAndRoute(self.__WB_MANIFEST);

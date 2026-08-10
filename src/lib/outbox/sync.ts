@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import { supabase } from '@/lib/supabase/client';
 import { queryClient } from '@/lib/query/client';
 
@@ -76,30 +78,33 @@ interface SendResult {
   message: string;
 }
 
+/**
+ * Таблица известна только в рантайме, поэтому типизация схемы здесь не
+ * помогает: `from()` с union-именем даёт union построителей запросов, у
+ * которых несовместимые сигнатуры. Обращаемся через нетипизированный клиент —
+ * правильность этих вызовов стерегут тесты RLS, а не компилятор.
+ */
+const db = supabase as unknown as SupabaseClient;
+
 async function send(op: Operation): Promise<SendResult> {
   try {
     switch (op.kind) {
       case 'upsert': {
-        const { error } = await supabase
-          .from(op.table)
-          // id приходит от клиента, поэтому повтор — это обновление той же
-          // строки, а не дубль
-          .upsert({ ...op.payload, id: op.id } as never);
+        // id приходит от клиента, поэтому повтор — это обновление той же
+        // строки, а не дубль
+        const { error } = await db.from(op.table).upsert({ ...op.payload, id: op.id });
         return toResult(error);
       }
 
       case 'update': {
-        const { error } = await supabase
-          .from(op.table)
-          .update(op.patch as never)
-          .eq('id', op.id);
+        const { error } = await db.from(op.table).update(op.patch).eq('id', op.id);
         return toResult(error);
       }
 
       case 'delete': {
-        const { error } = await supabase
+        const { error } = await db
           .from(op.table)
-          .update({ deleted_at: new Date().toISOString() } as never)
+          .update({ deleted_at: new Date().toISOString() })
           .eq('id', op.id);
         return toResult(error);
       }
@@ -116,9 +121,9 @@ async function send(op: Operation): Promise<SendResult> {
         if (error) return { ok: false, message: error.message };
 
         if (op.attachTo) {
-          const { error: linkError } = await supabase
+          const { error: linkError } = await db
             .from(op.attachTo.table)
-            .update({ [op.attachTo.column]: op.path } as never)
+            .update({ [op.attachTo.column]: op.path })
             .eq('id', op.attachTo.id);
           if (linkError) return toResult(linkError);
         }

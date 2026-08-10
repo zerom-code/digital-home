@@ -26,7 +26,9 @@
       "@/*": ["src/*"]
     },
 
-    "types": ["vite/client", "vite-plugin-pwa/react", "vitest/globals"]
+    // types задан явно, поэтому @types/node сюда нужно вписать руками —
+    // иначе tsc не увидит node:url в vite.config.ts
+    "types": ["node", "vite/client", "vite-plugin-pwa/react", "vitest/globals"]
   },
   "include": ["src", "vite.config.ts"],
   // Service worker живёт в окружении WebWorker: его lib конфликтует с DOM,

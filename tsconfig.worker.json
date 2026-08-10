@@ -15,7 +15,7 @@
     "noEmit": true,
     "verbatimModuleSyntax": true,
 
-    "types": ["vite/client", "vite-plugin-pwa/info"]
+    "types": ["vite/client"]
   },
   "include": ["src/sw.ts"]
 }

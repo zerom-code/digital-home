@@ -2,8 +2,17 @@
  * Типы базы данных.
  *
  * В обычном проекте это генерирует `supabase gen types typescript`. Здесь они
- * написаны руками по supabase/migrations/0001_schema.sql — когда появится
- * доступ к проекту, файл можно заменить сгенерированным без изменений в коде.
+ * написаны руками по миграциям — когда появится доступ к проекту, файл можно
+ * заменить сгенерированным без изменений в остальном коде.
+ *
+ * Две вещи, без которых supabase-js молча схлопывает все запросы в `never`:
+ *
+ *   1. Формы строк объявлены через `type`, а не `interface`. Ограничение
+ *      GenericTable требует `Record<string, unknown>`, а интерфейс без
+ *      индексной сигнатуры под него не подходит — тип-алиас подходит.
+ *   2. У каждой таблицы есть `Relationships`. Поле кажется лишним, но без
+ *      него таблица не совпадает с GenericTable, и вывод типов ломается
+ *      целиком, а не для одной таблицы.
  *
  * Insert- и Update-формы выводятся из Row: перечислять три почти одинаковых
  * набора полей для каждой таблицы — верный способ их рассинхронизировать.
@@ -15,6 +24,9 @@ type Insertable<Row, Required extends keyof Row> = Pick<Row, Required> &
 
 type Updatable<Row> = Partial<Row>;
 
+/** Внешние ключи в рукописных типах не описываем: вложенные select не нужны. */
+type NoRelations = [];
+
 export type Role = 'owner' | 'admin' | 'member' | 'guest';
 export type ItemStatus = 'active' | 'broken' | 'sold' | 'disposed' | 'stored';
 export type SpaceKind =
@@ -24,33 +36,35 @@ export type HomeKind = 'apartment' | 'house' | 'dacha' | 'garage' | 'office' | '
 export type DocumentKind = 'manual' | 'receipt' | 'warranty' | 'photo' | 'contract' | 'other';
 export type EnergyMode = 'typical' | 'label' | 'power_hours' | 'per_cycle';
 export type LabelUnit = 'kwh_year' | 'kwh_100cycles' | 'kwh_1000h';
+export type TaskStatus = 'open' | 'done' | 'skipped';
+export type TaskSource = 'manual' | 'warranty' | 'maintenance' | 'consumable';
 
-export interface Profile {
+export type Profile = {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
   locale: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface Household {
+export type Household = {
   id: string;
   name: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface HouseholdMember {
+export type HouseholdMember = {
   household_id: string;
   user_id: string;
   role: Role;
   joined_at: string;
-}
+};
 
-export interface HouseholdInvite {
+export type HouseholdInvite = {
   id: string;
   household_id: string;
   code: string;
@@ -61,9 +75,9 @@ export interface HouseholdInvite {
   created_by: string | null;
   revoked_at: string | null;
   created_at: string;
-}
+};
 
-export interface Home {
+export type Home = {
   id: string;
   household_id: string;
   name: string | null;
@@ -77,9 +91,9 @@ export interface Home {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface Space {
+export type Space = {
   id: string;
   household_id: string;
   home_id: string | null;
@@ -96,9 +110,9 @@ export interface Space {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface ItemCategory {
+export type ItemCategory = {
   id: string;
   parent_id: string | null;
   name_ru: string;
@@ -114,9 +128,9 @@ export interface ItemCategory {
   label_unit: LabelUnit | null;
   default_warranty_months: number | null;
   default_service_interval_days: number | null;
-}
+};
 
-export interface Item {
+export type Item = {
   id: string;
   household_id: string;
   home_id: string | null;
@@ -144,9 +158,9 @@ export interface Item {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface ItemDocument {
+export type ItemDocument = {
   id: string;
   household_id: string;
   item_id: string | null;
@@ -163,9 +177,9 @@ export interface ItemDocument {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface Task {
+export type Task = {
   id: string;
   household_id: string;
   item_id: string | null;
@@ -175,17 +189,17 @@ export interface Task {
   due_at: string | null;
   interval_days: number | null;
   assignee_id: string | null;
-  status: 'open' | 'done' | 'skipped';
-  source: 'manual' | 'warranty' | 'maintenance' | 'consumable';
+  status: TaskStatus;
+  source: TaskSource;
   completed_at: string | null;
   completed_by: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface Consumable {
+export type Consumable = {
   id: string;
   household_id: string;
   item_id: string | null;
@@ -202,9 +216,9 @@ export interface Consumable {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface ServiceRecord {
+export type ServiceRecord = {
   id: string;
   household_id: string;
   item_id: string;
@@ -219,9 +233,9 @@ export interface ServiceRecord {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
+};
 
-export interface PushSubscriptionRow {
+export type PushSubscriptionRow = {
   id: string;
   user_id: string;
   endpoint: string;
@@ -231,9 +245,9 @@ export interface PushSubscriptionRow {
   created_at: string;
   last_used_at: string | null;
   failed_at: string | null;
-}
+};
 
-export interface NotificationRow {
+export type NotificationRow = {
   id: string;
   household_id: string;
   user_id: string | null;
@@ -247,96 +261,113 @@ export interface NotificationRow {
   send_after: string;
   sent_at: string | null;
   created_at: string;
-}
+};
 
-export interface AiSettings {
+export type AiSettings = {
   household_id: string;
   enabled: boolean;
   monthly_limit_usd: number;
   consent_at: string | null;
   consent_by: string | null;
-}
+};
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      consumables: {
-        Row: Consumable;
-        Insert: Insertable<Consumable, 'household_id'>;
-        Update: Updatable<Consumable>;
-      };
-      service_records: {
-        Row: ServiceRecord;
-        Insert: Insertable<ServiceRecord, 'household_id' | 'item_id'>;
-        Update: Updatable<ServiceRecord>;
-      };
-      push_subscriptions: {
-        Row: PushSubscriptionRow;
-        Insert: Insertable<PushSubscriptionRow, 'user_id' | 'endpoint' | 'p256dh' | 'auth_key'>;
-        Update: Updatable<PushSubscriptionRow>;
-      };
-      notifications: {
-        Row: NotificationRow;
-        Insert: Insertable<NotificationRow, 'household_id' | 'title'>;
-        Update: Updatable<NotificationRow>;
-      };
-      ai_settings: {
-        Row: AiSettings;
-        Insert: Insertable<AiSettings, 'household_id'>;
-        Update: Updatable<AiSettings>;
-      };
       profiles: {
         Row: Profile;
         Insert: Insertable<Profile, 'id'>;
         Update: Updatable<Profile>;
+        Relationships: NoRelations;
       };
       households: {
         Row: Household;
-        Insert: Insertable<Household, never>;
+        Insert: Partial<Household>;
         Update: Updatable<Household>;
+        Relationships: NoRelations;
       };
       household_members: {
         Row: HouseholdMember;
         Insert: Insertable<HouseholdMember, 'household_id' | 'user_id'>;
         Update: Updatable<HouseholdMember>;
+        Relationships: NoRelations;
       };
       household_invites: {
         Row: HouseholdInvite;
         Insert: Insertable<HouseholdInvite, 'household_id' | 'code'>;
         Update: Updatable<HouseholdInvite>;
+        Relationships: NoRelations;
       };
       homes: {
         Row: Home;
         Insert: Insertable<Home, 'household_id'>;
         Update: Updatable<Home>;
+        Relationships: NoRelations;
       };
       spaces: {
         Row: Space;
         Insert: Insertable<Space, 'household_id'>;
         Update: Updatable<Space>;
+        Relationships: NoRelations;
       };
       item_categories: {
         Row: ItemCategory;
         Insert: Insertable<ItemCategory, 'id' | 'name_ru'>;
         Update: Updatable<ItemCategory>;
+        Relationships: NoRelations;
       };
       items: {
         Row: Item;
         Insert: Insertable<Item, 'household_id' | 'name'>;
         Update: Updatable<Item>;
+        Relationships: NoRelations;
       };
       documents: {
         Row: ItemDocument;
         Insert: Insertable<ItemDocument, 'household_id'>;
         Update: Updatable<ItemDocument>;
+        Relationships: NoRelations;
       };
       tasks: {
         Row: Task;
         Insert: Insertable<Task, 'household_id'>;
         Update: Updatable<Task>;
+        Relationships: NoRelations;
+      };
+      consumables: {
+        Row: Consumable;
+        Insert: Insertable<Consumable, 'household_id'>;
+        Update: Updatable<Consumable>;
+        Relationships: NoRelations;
+      };
+      service_records: {
+        Row: ServiceRecord;
+        Insert: Insertable<ServiceRecord, 'household_id' | 'item_id'>;
+        Update: Updatable<ServiceRecord>;
+        Relationships: NoRelations;
+      };
+      push_subscriptions: {
+        Row: PushSubscriptionRow;
+        Insert: Insertable<PushSubscriptionRow, 'user_id' | 'endpoint' | 'p256dh' | 'auth_key'>;
+        Update: Updatable<PushSubscriptionRow>;
+        Relationships: NoRelations;
+      };
+      notifications: {
+        Row: NotificationRow;
+        Insert: Insertable<NotificationRow, 'household_id' | 'title'>;
+        Update: Updatable<NotificationRow>;
+        Relationships: NoRelations;
+      };
+      ai_settings: {
+        Row: AiSettings;
+        Insert: Insertable<AiSettings, 'household_id'>;
+        Update: Updatable<AiSettings>;
+        Relationships: NoRelations;
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       create_household: {
         Args: { p_name?: string | null };
@@ -351,11 +382,15 @@ export interface Database {
         Returns: Item[];
       };
       refresh_my_tasks: {
-        Args: Record<string, never>;
+        Args: Record<PropertyKey, never>;
         Returns: number;
       };
     };
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
