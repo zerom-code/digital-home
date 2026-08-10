@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "locale": "ru",
+  "_about": "Справочник категорий вещей с типовыми параметрами. Загружается в таблицу item_categories миграцией. Пропущенное поле означает NULL. Значения энергопотребления ориентировочные и служат отправной точкой для режима 'typical' — пользователь всегда может уточнить. См. docs/03-energy.md.",
+  "_fields": {
+    "id": "Идентификатор вида 'группа.категория'",
+    "parent_id": "Родительская группа",
+    "name_ru": "Название для интерфейса",
+    "icon": "Эмодзи для карточки",
+    "default_energy_mode": "typical | label | power_hours | per_cycle. Отсутствует у неэлектрических вещей",
+    "default_power_w": "Номинальная мощность, Вт",
+    "default_standby_w": "Потребление в дежурном режиме, Вт",
+    "default_duty_cycle": "Доля времени под нагрузкой, 0..1 (для режима typical)",
+    "default_hours_per_day": "Часов работы в день (для режима power_hours)",
+    "default_kwh_per_cycle": "кВт·ч за один цикл (для режима per_cycle)",
+    "default_cycles_per_week": "Циклов в неделю (для режима per_cycle)",
+    "label_unit": "Единица на энергетической наклейке ЕС: kwh_year | kwh_100cycles | kwh_1000h",
+    "default_warranty_months": "Типовой срок гарантии, месяцев",
+    "default_service_interval_days": "Типовой интервал обслуживания, дней",
+    "seasonality": "Множители по месяцам (1 = январь). Отсутствующий месяц означает 1"
+  },
+
+  "categories": [
+    { "id": "kitchen", "name_ru": "Кухня", "icon": "🍳", "sort_order": 10 },
+
+    { "id": "kitchen.fridge", "parent_id": "kitchen", "name_ru": "Холодильник", "icon": "🧊",
+      "default_energy_mode": "typical", "default_power_w": 150, "default_duty_cycle": 0.3,
+      "label_unit": "kwh_year", "default_warranty_months": 24 },
+
+    { "id": "kitchen.freezer", "parent_id": "kitchen", "name_ru": "Морозильная камера", "icon": "❄️",
+      "default_energy_mode": "typical", "default_power_w": 120, "default_duty_cycle": 0.35,
+      "label_unit": "kwh_year", "default_warranty_months": 24 },
+
+    { "id": "kitchen.stove", "parent_id": "kitchen", "name_ru": "Плита", "icon": "🔥",
+      "default_energy_mode": "power_hours", "default_power_w": 2000, "default_hours_per_day": 1,
+      "default_warranty_months": 24 },
+
+    { "id": "kitchen.oven", "parent_id": "kitchen", "name_ru": "Духовка", "icon": "🥧",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 1.2, "default_cycles_per_week": 3,
+      "default_warranty_months": 24 },
+
+    { "id": "kitchen.hood", "parent_id": "kitchen", "name_ru": "Вытяжка", "icon": "💨",
+      "default_energy_mode": "power_hours", "default_power_w": 120, "default_hours_per_day": 1,
+      "default_warranty_months": 24, "default_service_interval_days": 180 },
+
+    { "id": "kitchen.microwave", "parent_id": "kitchen", "name_ru": "Микроволновка", "icon": "📻",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.09, "default_cycles_per_week": 14,
+      "default_standby_w": 1.5, "default_warranty_months": 24 },
+
+    { "id": "kitchen.dishwasher", "parent_id": "kitchen", "name_ru": "Посудомоечная машина", "icon": "🍽",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 1.0, "default_cycles_per_week": 5,
+      "label_unit": "kwh_100cycles", "default_warranty_months": 24, "default_service_interval_days": 180 },
+
+    { "id": "kitchen.kettle", "parent_id": "kitchen", "name_ru": "Электрочайник", "icon": "🫖",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.1, "default_cycles_per_week": 21,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.coffee", "parent_id": "kitchen", "name_ru": "Кофемашина", "icon": "☕",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.05, "default_cycles_per_week": 14,
+      "default_standby_w": 1, "default_warranty_months": 24, "default_service_interval_days": 180 },
+
+    { "id": "kitchen.multicooker", "parent_id": "kitchen", "name_ru": "Мультиварка", "icon": "🍲",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.4, "default_cycles_per_week": 4,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.blender", "parent_id": "kitchen", "name_ru": "Блендер", "icon": "🥤",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.02, "default_cycles_per_week": 7,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.mixer", "parent_id": "kitchen", "name_ru": "Миксер", "icon": "🧁",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.02, "default_cycles_per_week": 2,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.toaster", "parent_id": "kitchen", "name_ru": "Тостер", "icon": "🍞",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.04, "default_cycles_per_week": 7,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.meatgrinder", "parent_id": "kitchen", "name_ru": "Мясорубка", "icon": "🥩",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.05, "default_cycles_per_week": 2,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.juicer", "parent_id": "kitchen", "name_ru": "Соковыжималка", "icon": "🍊",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.03, "default_cycles_per_week": 2,
+      "default_warranty_months": 12 },
+
+    { "id": "kitchen.waterfilter", "parent_id": "kitchen", "name_ru": "Фильтр для воды", "icon": "💧",
+      "default_service_interval_days": 180 },
+
+    { "id": "laundry", "name_ru": "Стирка и уборка", "icon": "🧺", "sort_order": 20 },
+
+    { "id": "laundry.washer", "parent_id": "laundry", "name_ru": "Стиральная машина", "icon": "🌀",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.8, "default_cycles_per_week": 4,
+      "label_unit": "kwh_100cycles", "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "laundry.dryer", "parent_id": "laundry", "name_ru": "Сушильная машина", "icon": "🌬",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 2.0, "default_cycles_per_week": 2,
+      "label_unit": "kwh_100cycles", "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "laundry.washer_dryer", "parent_id": "laundry", "name_ru": "Стирально-сушильная машина", "icon": "🌀",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 1.6, "default_cycles_per_week": 3,
+      "label_unit": "kwh_100cycles", "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "laundry.vacuum", "parent_id": "laundry", "name_ru": "Пылесос", "icon": "🧹",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.15, "default_cycles_per_week": 2,
+      "default_warranty_months": 24, "default_service_interval_days": 180 },
+
+    { "id": "laundry.robot_vacuum", "parent_id": "laundry", "name_ru": "Робот-пылесос", "icon": "🤖",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.06, "default_cycles_per_week": 7,
+      "default_warranty_months": 24, "default_service_interval_days": 90 },
+
+    { "id": "laundry.iron", "parent_id": "laundry", "name_ru": "Утюг", "icon": "👔",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.2, "default_cycles_per_week": 2,
+      "default_warranty_months": 12 },
+
+    { "id": "laundry.steamer", "parent_id": "laundry", "name_ru": "Отпариватель", "icon": "♨️",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.1, "default_cycles_per_week": 2,
+      "default_warranty_months": 12 },
+
+    { "id": "climate", "name_ru": "Климат", "icon": "🌡", "sort_order": 30 },
+
+    { "id": "climate.ac", "parent_id": "climate", "name_ru": "Кондиционер", "icon": "🧊",
+      "default_energy_mode": "power_hours", "default_power_w": 900, "default_hours_per_day": 5,
+      "default_warranty_months": 36, "default_service_interval_days": 365,
+      "seasonality": { "1": 0, "2": 0, "3": 0, "4": 0.1, "5": 0.4, "6": 1, "7": 1.5, "8": 1.5, "9": 0.5, "10": 0.1, "11": 0, "12": 0 } },
+
+    { "id": "climate.heater", "parent_id": "climate", "name_ru": "Обогреватель", "icon": "🔥",
+      "default_energy_mode": "power_hours", "default_power_w": 1500, "default_hours_per_day": 6,
+      "default_warranty_months": 12,
+      "seasonality": { "1": 1.4, "2": 1.2, "3": 0.6, "4": 0.2, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0.3, "11": 0.8, "12": 1.2 } },
+
+    { "id": "climate.fan", "parent_id": "climate", "name_ru": "Вентилятор", "icon": "🌀",
+      "default_energy_mode": "power_hours", "default_power_w": 50, "default_hours_per_day": 6,
+      "default_warranty_months": 12,
+      "seasonality": { "1": 0, "2": 0, "3": 0, "4": 0.1, "5": 0.5, "6": 1, "7": 1.4, "8": 1.4, "9": 0.5, "10": 0, "11": 0, "12": 0 } },
+
+    { "id": "climate.humidifier", "parent_id": "climate", "name_ru": "Увлажнитель воздуха", "icon": "💨",
+      "default_energy_mode": "power_hours", "default_power_w": 30, "default_hours_per_day": 8,
+      "default_warranty_months": 12, "default_service_interval_days": 90 },
+
+    { "id": "climate.dehumidifier", "parent_id": "climate", "name_ru": "Осушитель воздуха", "icon": "💦",
+      "default_energy_mode": "power_hours", "default_power_w": 300, "default_hours_per_day": 4,
+      "default_warranty_months": 24, "default_service_interval_days": 180 },
+
+    { "id": "climate.air_purifier", "parent_id": "climate", "name_ru": "Очиститель воздуха", "icon": "🌿",
+      "default_energy_mode": "typical", "default_power_w": 30, "default_duty_cycle": 0.5,
+      "default_warranty_months": 24, "default_service_interval_days": 180 },
+
+    { "id": "climate.heated_floor", "parent_id": "climate", "name_ru": "Тёплый пол", "icon": "🔆",
+      "default_energy_mode": "power_hours", "default_power_w": 800, "default_hours_per_day": 8,
+      "default_warranty_months": 60,
+      "seasonality": { "1": 1.4, "2": 1.2, "3": 0.7, "4": 0.2, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0.3, "11": 0.9, "12": 1.3 } },
+
+    { "id": "climate.towel_dryer", "parent_id": "climate", "name_ru": "Полотенцесушитель", "icon": "🧻",
+      "default_energy_mode": "typical", "default_power_w": 60, "default_duty_cycle": 1,
+      "default_warranty_months": 24 },
+
+    { "id": "water", "name_ru": "Вода и отопление", "icon": "🚿", "sort_order": 40 },
+
+    { "id": "water.boiler", "parent_id": "water", "name_ru": "Бойлер", "icon": "🛢",
+      "default_energy_mode": "typical", "default_power_w": 2000, "default_duty_cycle": 0.12,
+      "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "water.gas_boiler", "parent_id": "water", "name_ru": "Газовый котёл", "icon": "🔥",
+      "default_energy_mode": "typical", "default_power_w": 100, "default_duty_cycle": 0.3,
+      "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "water.pump", "parent_id": "water", "name_ru": "Насос", "icon": "⚙️",
+      "default_energy_mode": "typical", "default_power_w": 400, "default_duty_cycle": 0.05,
+      "default_warranty_months": 24 },
+
+    { "id": "water.filter_main", "parent_id": "water", "name_ru": "Магистральный фильтр", "icon": "🧯",
+      "default_service_interval_days": 180 },
+
+    { "id": "water.meter", "parent_id": "water", "name_ru": "Счётчик воды", "icon": "🔢",
+      "default_service_interval_days": 1460 },
+
+    { "id": "water.radiator", "parent_id": "water", "name_ru": "Радиатор отопления", "icon": "🌡" },
+
+    { "id": "electronics", "name_ru": "Электроника", "icon": "💻", "sort_order": 50 },
+
+    { "id": "electronics.tv", "parent_id": "electronics", "name_ru": "Телевизор", "icon": "📺",
+      "default_energy_mode": "power_hours", "default_power_w": 100, "default_hours_per_day": 4,
+      "default_standby_w": 0.5, "label_unit": "kwh_1000h", "default_warranty_months": 24 },
+
+    { "id": "electronics.monitor", "parent_id": "electronics", "name_ru": "Монитор", "icon": "🖥",
+      "default_energy_mode": "power_hours", "default_power_w": 30, "default_hours_per_day": 6,
+      "default_standby_w": 0.5, "label_unit": "kwh_1000h", "default_warranty_months": 24 },
+
+    { "id": "electronics.desktop", "parent_id": "electronics", "name_ru": "Настольный компьютер", "icon": "🖥",
+      "default_energy_mode": "power_hours", "default_power_w": 200, "default_hours_per_day": 6,
+      "default_standby_w": 2, "default_warranty_months": 24 },
+
+    { "id": "electronics.laptop", "parent_id": "electronics", "name_ru": "Ноутбук", "icon": "💻",
+      "default_energy_mode": "power_hours", "default_power_w": 50, "default_hours_per_day": 6,
+      "default_warranty_months": 24 },
+
+    { "id": "electronics.router", "parent_id": "electronics", "name_ru": "Роутер", "icon": "📶",
+      "default_energy_mode": "typical", "default_power_w": 8, "default_duty_cycle": 1,
+      "default_warranty_months": 12 },
+
+    { "id": "electronics.console", "parent_id": "electronics", "name_ru": "Игровая приставка", "icon": "🎮",
+      "default_energy_mode": "power_hours", "default_power_w": 150, "default_hours_per_day": 2,
+      "default_standby_w": 1, "default_warranty_months": 12 },
+
+    { "id": "electronics.speaker", "parent_id": "electronics", "name_ru": "Аудиосистема", "icon": "🔊",
+      "default_energy_mode": "power_hours", "default_power_w": 20, "default_hours_per_day": 3,
+      "default_standby_w": 1, "default_warranty_months": 12 },
+
+    { "id": "electronics.smart_speaker", "parent_id": "electronics", "name_ru": "Умная колонка", "icon": "🗣",
+      "default_energy_mode": "typical", "default_power_w": 3, "default_duty_cycle": 1,
+      "default_warranty_months": 12 },
+
+    { "id": "electronics.printer", "parent_id": "electronics", "name_ru": "Принтер", "icon": "🖨",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.01, "default_cycles_per_week": 3,
+      "default_standby_w": 2, "default_warranty_months": 12, "default_service_interval_days": 365 },
+
+    { "id": "electronics.projector", "parent_id": "electronics", "name_ru": "Проектор", "icon": "📽",
+      "default_energy_mode": "power_hours", "default_power_w": 250, "default_hours_per_day": 1,
+      "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "electronics.nas", "parent_id": "electronics", "name_ru": "NAS или домашний сервер", "icon": "🗄",
+      "default_energy_mode": "typical", "default_power_w": 30, "default_duty_cycle": 1,
+      "default_warranty_months": 24 },
+
+    { "id": "electronics.ups", "parent_id": "electronics", "name_ru": "Источник бесперебойного питания", "icon": "🔋",
+      "default_energy_mode": "typical", "default_power_w": 10, "default_duty_cycle": 1,
+      "default_warranty_months": 24, "default_service_interval_days": 1095 },
+
+    { "id": "lighting", "name_ru": "Освещение", "icon": "💡", "sort_order": 60 },
+
+    { "id": "lighting.ceiling", "parent_id": "lighting", "name_ru": "Потолочный свет", "icon": "💡",
+      "default_energy_mode": "power_hours", "default_power_w": 40, "default_hours_per_day": 5 },
+
+    { "id": "lighting.lamp", "parent_id": "lighting", "name_ru": "Настольная лампа", "icon": "🛋",
+      "default_energy_mode": "power_hours", "default_power_w": 10, "default_hours_per_day": 4 },
+
+    { "id": "lighting.led_strip", "parent_id": "lighting", "name_ru": "Светодиодная лента", "icon": "🌈",
+      "default_energy_mode": "power_hours", "default_power_w": 25, "default_hours_per_day": 4 },
+
+    { "id": "lighting.outdoor", "parent_id": "lighting", "name_ru": "Уличный светильник", "icon": "🏮",
+      "default_energy_mode": "power_hours", "default_power_w": 20, "default_hours_per_day": 8 },
+
+    { "id": "furniture", "name_ru": "Мебель", "icon": "🛋", "sort_order": 70 },
+
+    { "id": "furniture.sofa", "parent_id": "furniture", "name_ru": "Диван", "icon": "🛋" },
+    { "id": "furniture.bed", "parent_id": "furniture", "name_ru": "Кровать", "icon": "🛏" },
+    { "id": "furniture.wardrobe", "parent_id": "furniture", "name_ru": "Шкаф", "icon": "🚪" },
+    { "id": "furniture.table", "parent_id": "furniture", "name_ru": "Стол", "icon": "🪑" },
+    { "id": "furniture.chair", "parent_id": "furniture", "name_ru": "Стул или кресло", "icon": "🪑" },
+    { "id": "furniture.kitchen_set", "parent_id": "furniture", "name_ru": "Кухонный гарнитур", "icon": "🗄" },
+    { "id": "furniture.mirror", "parent_id": "furniture", "name_ru": "Зеркало", "icon": "🪞" },
+
+    { "id": "tools", "name_ru": "Инструменты и хозяйство", "icon": "🔧", "sort_order": 80 },
+
+    { "id": "tools.drill", "parent_id": "tools", "name_ru": "Дрель или шуруповёрт", "icon": "🔩",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.05, "default_cycles_per_week": 0.5,
+      "default_warranty_months": 24 },
+
+    { "id": "tools.sewing", "parent_id": "tools", "name_ru": "Швейная машина", "icon": "🧵",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.05, "default_cycles_per_week": 1,
+      "default_warranty_months": 24, "default_service_interval_days": 730 },
+
+    { "id": "tools.welder", "parent_id": "tools", "name_ru": "Сварочный аппарат", "icon": "⚡",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.5, "default_cycles_per_week": 0.2,
+      "default_warranty_months": 24 },
+
+    { "id": "tools.compressor", "parent_id": "tools", "name_ru": "Компрессор", "icon": "🌬",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.3, "default_cycles_per_week": 0.5,
+      "default_warranty_months": 24 },
+
+    { "id": "tools.ladder", "parent_id": "tools", "name_ru": "Стремянка", "icon": "🪜" },
+    { "id": "tools.toolbox", "parent_id": "tools", "name_ru": "Набор инструментов", "icon": "🧰" },
+
+    { "id": "personal", "name_ru": "Личный уход", "icon": "🪥", "sort_order": 90 },
+
+    { "id": "personal.hairdryer", "parent_id": "personal", "name_ru": "Фен", "icon": "💇",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.05, "default_cycles_per_week": 7,
+      "default_warranty_months": 12 },
+
+    { "id": "personal.shaver", "parent_id": "personal", "name_ru": "Электробритва", "icon": "🪒",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.01, "default_cycles_per_week": 5,
+      "default_warranty_months": 24 },
+
+    { "id": "personal.toothbrush", "parent_id": "personal", "name_ru": "Электрическая зубная щётка", "icon": "🪥",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.005, "default_cycles_per_week": 14,
+      "default_warranty_months": 24, "default_service_interval_days": 90 },
+
+    { "id": "personal.scales", "parent_id": "personal", "name_ru": "Весы", "icon": "⚖️",
+      "default_warranty_months": 12 },
+
+    { "id": "outdoor", "name_ru": "Улица и транспорт", "icon": "🚗", "sort_order": 100 },
+
+    { "id": "outdoor.car", "parent_id": "outdoor", "name_ru": "Автомобиль", "icon": "🚗",
+      "default_service_interval_days": 365 },
+
+    { "id": "outdoor.bike", "parent_id": "outdoor", "name_ru": "Велосипед", "icon": "🚲",
+      "default_service_interval_days": 365 },
+
+    { "id": "outdoor.escooter", "parent_id": "outdoor", "name_ru": "Электросамокат", "icon": "🛴",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.5, "default_cycles_per_week": 3,
+      "default_warranty_months": 12, "default_service_interval_days": 365 },
+
+    { "id": "outdoor.lawnmower", "parent_id": "outdoor", "name_ru": "Газонокосилка", "icon": "🌱",
+      "default_energy_mode": "per_cycle", "default_kwh_per_cycle": 0.3, "default_cycles_per_week": 1,
+      "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "outdoor.grill", "parent_id": "outdoor", "name_ru": "Гриль или мангал", "icon": "🍖" },
+
+    { "id": "safety", "name_ru": "Безопасность и коммуникации", "icon": "🛡", "sort_order": 110 },
+
+    { "id": "safety.smoke_detector", "parent_id": "safety", "name_ru": "Датчик дыма", "icon": "🚨",
+      "default_service_interval_days": 365 },
+
+    { "id": "safety.co_detector", "parent_id": "safety", "name_ru": "Датчик угарного газа", "icon": "☠️",
+      "default_service_interval_days": 365 },
+
+    { "id": "safety.fire_extinguisher", "parent_id": "safety", "name_ru": "Огнетушитель", "icon": "🧯",
+      "default_service_interval_days": 365 },
+
+    { "id": "safety.camera", "parent_id": "safety", "name_ru": "Камера видеонаблюдения", "icon": "📹",
+      "default_energy_mode": "typical", "default_power_w": 5, "default_duty_cycle": 1,
+      "default_warranty_months": 24 },
+
+    { "id": "safety.doorbell", "parent_id": "safety", "name_ru": "Домофон или видеозвонок", "icon": "🔔",
+      "default_energy_mode": "typical", "default_power_w": 3, "default_duty_cycle": 1,
+      "default_warranty_months": 24 },
+
+    { "id": "safety.alarm", "parent_id": "safety", "name_ru": "Сигнализация", "icon": "🚔",
+      "default_energy_mode": "typical", "default_power_w": 10, "default_duty_cycle": 1,
+      "default_warranty_months": 24, "default_service_interval_days": 365 },
+
+    { "id": "safety.electrical_panel", "parent_id": "safety", "name_ru": "Электрощиток", "icon": "⚡" },
+
+    { "id": "safety.water_valve", "parent_id": "safety", "name_ru": "Вентиль перекрытия воды", "icon": "🚰" },
+
+    { "id": "safety.gas_valve", "parent_id": "safety", "name_ru": "Газовый кран", "icon": "🔧" },
+
+    { "id": "other", "name_ru": "Прочее", "icon": "📦", "sort_order": 120 },
+
+    { "id": "other.plant", "parent_id": "other", "name_ru": "Растение", "icon": "🪴",
+      "default_service_interval_days": 7 },
+
+    { "id": "other.pet", "parent_id": "other", "name_ru": "Для питомца", "icon": "🐾" },
+
+    { "id": "other.misc", "parent_id": "other", "name_ru": "Прочее", "icon": "📦" }
+  ]
+}
