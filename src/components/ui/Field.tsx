@@ -1,9 +1,13 @@
 import { useId } from 'react';
 import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react';
 
+// min-w-0 и max-w-full не для красоты: Safari даёт input[type=date] и
+// type=number собственную минимальную ширину по содержимому, и она бывает
+// больше отведённой. Тогда w-full проигрывает, поле вылезает за край, а
+// вместе с ним вбок начинает таскаться весь экран
 const control =
-  'w-full min-h-12 rounded-xl border border-line bg-surface px-4 py-3 text-base ' +
-  'text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none ' +
+  'w-full min-w-0 max-w-full min-h-12 rounded-xl border border-line bg-surface px-4 py-3 ' +
+  'text-base text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none ' +
   'focus-visible:outline-2 focus-visible:outline-accent';
 
 interface Wrap {

@@ -27,6 +27,18 @@ const KEYBOARD_MIN_HEIGHT = 120;
 /** iOS обновляет размеры окна не сразу после поворота — домеряем позже. */
 const ORIENTATION_SETTLE_MS = 300;
 
+/**
+ * Сколько ждать, пока клавиатура доедет.
+ *
+ * Клавиатура въезжает с анимацией, и visualViewport сообщает о каждом её
+ * промежуточном положении. Двигать интерфейс на каждое такое сообщение
+ * нельзя: поле, по которому только что попали пальцем, уезжает из-под него
+ * прямо во время появления клавиатуры, и iOS отменяет ввод — клавиатура
+ * мигает и пропадает, а со второго раза открывается нормально. Поэтому
+ * --kb-h выставляется один раз, когда размеры перестали меняться.
+ */
+const KEYBOARD_SETTLE_MS = 120;
+
 /** Снимок размеров окна — всё, что нужно, чтобы посчитать каркас. */
 export interface ViewportReading {
   /** Высота слоя разметки. */
@@ -133,12 +145,25 @@ export function installViewportMetrics(): () => void {
   const root = document.documentElement;
   let appHeight = window.innerHeight;
   let settleTimer = 0;
+  let keyboardTimer = 0;
 
   const update = () => {
     const metrics = measureShell(readViewport(), appHeight);
     appHeight = metrics.appHeight;
+
+    // Высота окна — сразу: она меняется редко и ничего под пальцем не двигает
     root.style.setProperty('--app-h', `${metrics.appHeight}px`);
-    root.style.setProperty('--kb-h', `${metrics.keyboardHeight}px`);
+
+    // Высота клавиатуры — только когда та доехала (см. KEYBOARD_SETTLE_MS).
+    // Меряем заново в момент срабатывания, а не берём посчитанное сейчас:
+    // между событием и таймером размеры ещё успевают измениться
+    window.clearTimeout(keyboardTimer);
+    keyboardTimer = window.setTimeout(() => {
+      const settled = measureShell(readViewport(), appHeight);
+      appHeight = settled.appHeight;
+      root.style.setProperty('--app-h', `${settled.appHeight}px`);
+      root.style.setProperty('--kb-h', `${settled.keyboardHeight}px`);
+    }, KEYBOARD_SETTLE_MS);
   };
 
   const updateAfterRotation = () => {
@@ -150,6 +175,9 @@ export function installViewportMetrics(): () => void {
     settleTimer = window.setTimeout(update, ORIENTATION_SETTLE_MS);
   };
 
+  // Клавиатуры при запуске нет, а первое значение --kb-h придёт отложенно —
+  // до тех пор пусть переменная существует и равна нулю
+  root.style.setProperty('--kb-h', '0px');
   update();
 
   window.addEventListener('resize', update);
@@ -161,6 +189,7 @@ export function installViewportMetrics(): () => void {
 
   return () => {
     window.clearTimeout(settleTimer);
+    window.clearTimeout(keyboardTimer);
     window.removeEventListener('resize', update);
     window.removeEventListener('orientationchange', updateAfterRotation);
     window.visualViewport?.removeEventListener('resize', update);

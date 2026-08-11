@@ -81,7 +81,10 @@ export function Sheet({ open, onClose, title, children }: Props) {
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">{children}</div>
+        {/* overflow-x-hidden по той же причине, что и у .app-scroll: одна
+            только вертикальная прокрутка в CSS невозможна, и лишняя ширина
+            внутри формы позволяла таскать лист вбок */}
+        <div className="app-scroll min-h-0 flex-1 px-5 py-5">{children}</div>
       </div>
     </dialog>
   );
