@@ -11,8 +11,9 @@ interface Props {
   open: boolean;
   onClose: () => void;
   householdId: string;
+  itemId: string;
   /** Подтверждённый черновик уходит в карточку, а не в базу напрямую */
-  onApply: (patch: Partial<Item>) => Promise<void>;
+  onApply: (patch: Partial<Item>, result: NameplateResult) => Promise<void>;
 }
 
 type Stage = 'pick' | 'scanning' | 'review';
@@ -24,7 +25,7 @@ type Stage = 'pick' | 'scanning' | 'review';
  * сфотографировать табличку готов. Именно в этом зазоре вся ценность
  * ИИ-слоя (docs/08-ai.md).
  */
-export function NameplateSheet({ open, onClose, householdId, onApply }: Props) {
+export function NameplateSheet({ open, onClose, householdId, itemId, onApply }: Props) {
   const { t } = useTranslation();
   const toast = useToast();
   const categories = useCategories();
@@ -129,12 +130,15 @@ export function NameplateSheet({ open, onClose, householdId, onApply }: Props) {
             event.preventDefault();
             setBusy(true);
             try {
-              await onApply({
-                brand: draft.brand,
-                model: draft.model,
-                serial_number: draft.serial_number,
-                ...(draft.category_hint ? { category_id: draft.category_hint } : {}),
-              });
+              await onApply(
+                {
+                  brand: draft.brand,
+                  model: draft.model,
+                  serial_number: draft.serial_number,
+                  ...(draft.category_hint ? { category_id: draft.category_hint } : {}),
+                },
+                draft
+              );
               reset();
               onClose();
               toast.show(t('ai.applied'));

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useActiveHousehold } from '@/features/household/useHousehold';
 import { useCategories, useDeleteItem, useItem, useSpaces, useUpdateItem } from '@/features/home/useHomeData';
+import { useSaveEnergyProfile } from '@/features/energy/useEnergy';
 import { computeWarranty, describeWarranty } from '@/lib/warranty';
 import type { Item } from '@/lib/supabase/types';
 import { Button, Card, Chip, EmptyState, InviteBlock, Input, Select, Sheet, Spinner, Textarea, useToast } from '@/components/ui';
@@ -29,6 +30,7 @@ export function ItemScreen() {
   const item = useItem(itemId);
   const categories = useCategories();
   const update = useUpdateItem(householdId);
+  const saveEnergyProfile = useSaveEnergyProfile(householdId);
   const { remove, restore } = useDeleteItem(householdId);
 
   const [editing, setEditing] = useState(false);
@@ -178,7 +180,29 @@ export function ItemScreen() {
           open={scanning}
           onClose={() => setScanning(false)}
           householdId={householdId}
-          onApply={(patch) => update.mutateAsync({ id: value.id, patch }).then(() => undefined)}
+          itemId={value.id}
+          onApply={async (patch, result) => {
+            // Обновляем саму вещь: бренд, модель, серийник, категорию
+            const newCategoryId = patch.category_id ?? value.category_id;
+            await update.mutateAsync({ id: value.id, patch });
+
+            // Сохраняем мощность в энергопрофиль, если она есть
+            if (result.power_w && newCategoryId) {
+              const targetCategory = categories.data?.find((c) => c.id === newCategoryId);
+              const hoursPerDay = targetCategory?.default_hours_per_day ?? 4; // Типовое значение
+
+              await saveEnergyProfile.mutateAsync({
+                itemId: value.id,
+                patch: {
+                  mode: 'power_hours',
+                  power_w: result.power_w,
+                  hours_per_day: hoursPerDay,
+                  source: 'ai_nameplate',
+                  confidence: result.confidence,
+                },
+              });
+            }
+          }}
         />
       )}
 
