@@ -51,10 +51,10 @@ export function Sheet({ open, onClose, title, children }: Props) {
     <dialog
       ref={ref}
       aria-label={title}
-      // Прижат к низу, ростом не выше окна и не под клавиатурой — всё это
-      // делает .sheet-dialog в index.css, потому что считать приходится
-      // через var(--app-h) и var(--kb-h)
-      className="sheet-dialog w-full sm:max-w-lg"
+      // Сам <dialog> — прозрачный слой во всю высоту окна приложения, а не
+      // видимая карточка: только так его низ совпадает с низом приложения, а
+      // не экрана (.sheet-dialog в index.css). Ширину и вид держит блок внутри
+      className="sheet-dialog"
       onClick={(event) => {
         // Клик мимо содержимого — по самому <dialog>, а не по его детям
         if (event.target === ref.current) onClose();
@@ -62,8 +62,8 @@ export function Sheet({ open, onClose, title, children }: Props) {
     >
       <div
         className={
-          'flex min-h-0 flex-col rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] ' +
-          'sm:rounded-2xl'
+          'flex w-full min-h-0 flex-col rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] ' +
+          'sm:max-w-lg sm:rounded-2xl'
         }
       >
         <div className="relative flex items-center justify-between gap-4 border-b border-line px-5 py-4">

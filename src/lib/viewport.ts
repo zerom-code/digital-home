@@ -29,12 +29,14 @@ const ORIENTATION_SETTLE_MS = 300;
 
 /** Снимок размеров окна — всё, что нужно, чтобы посчитать каркас. */
 export interface ViewportReading {
-  /** Высота слоя разметки: от поднятой клавиатуры на iOS не уменьшается. */
+  /** Высота слоя разметки. */
   innerHeight: number;
   /** Высота видимой области; `null`, если `visualViewport` не поддержан. */
   visualHeight: number | null;
   /** На сколько видимая область сдвинута вниз внутри слоя разметки. */
   visualOffsetTop: number;
+  /** Приложение открыто с домашнего экрана, а не во вкладке браузера. */
+  isStandalone: boolean;
 }
 
 /** Что из снимка попадает в CSS-переменные. */
@@ -56,7 +58,7 @@ export function measureShell(
   reading: ViewportReading,
   previousAppHeight: number
 ): ShellMetrics {
-  const { innerHeight, visualHeight, visualOffsetTop } = reading;
+  const { innerHeight, visualHeight, visualOffsetTop, isStandalone } = reading;
 
   // Без visualViewport (старые Android-браузеры) остаётся innerHeight: он
   // хотя бы не врёт про панели, потому что их там нет
@@ -64,14 +66,45 @@ export function measureShell(
     return { appHeight: Math.round(innerHeight), keyboardHeight: 0 };
   }
 
-  const covered = innerHeight - (visualHeight + visualOffsetTop);
+  // Нижняя граница того, что человек сейчас видит
+  const visibleBottom = visualHeight + visualOffsetTop;
+
+  if (isStandalone) {
+    // В установленном приложении высота окна постоянна: панелей, которые
+    // могли бы её менять, нет вовсе. Меняться может только видимая часть —
+    // её съедает клавиатура. Значит правильная высота окна это **наибольшая
+    // виденная**, и её достаточно один раз запомнить.
+    //
+    // Так надёжнее, чем вычислять её каждый раз. Раньше высота бралась из
+    // текущего замера, а «клавиатура поднята» опознавалась по расхождению
+    // innerHeight и visualViewport — но на iOS в установленном приложении
+    // при поднятой клавиатуре проседают **оба**. Расхождения нет, клавиатура
+    // не опознавалась, и оболочка ужималась до щели над ней. Обратно она уже
+    // не раскладывалась: следующий замер приходил с той же просевшей высотой.
+    // Максимум такого не допускает по построению — и сам себя чинит, если
+    // первый замер всё же случился при поднятой клавиатуре.
+    const appHeight = Math.max(
+      previousAppHeight,
+      Math.round(innerHeight),
+      Math.round(visibleBottom)
+    );
+    // Клавиатуру считаем от настоящей высоты окна, а не от innerHeight:
+    // именно потому, что тот вместе с ней и проседает
+    const covered = appHeight - visibleBottom;
+    return {
+      appHeight,
+      keyboardHeight: covered > KEYBOARD_MIN_HEIGHT ? Math.round(covered) : 0,
+    };
+  }
+
+  // В браузере окно меняется по-настоящему: Safari показывает и прячет свои
+  // панели. Тут наибольшее значение не годится — низ ушёл бы под панель
+  const covered = innerHeight - visibleBottom;
   const keyboardHeight = covered > KEYBOARD_MIN_HEIGHT ? Math.round(covered) : 0;
 
   // Пока клавиатура поднята, visualViewport показывает щель над ней, а не
   // окно приложения. Пересчитать по нему оболочку — значит сплющить весь
-  // интерфейс на время ввода, а потом разложить обратно. Вместо этого
-  // держим прошлую высоту, а про клавиатуру говорим отдельной переменной:
-  // подвинуться под неё должны только всплывающие листы, а не всё подряд.
+  // интерфейс на время ввода, а потом разложить обратно.
   return {
     appHeight: keyboardHeight > 0 ? previousAppHeight : Math.round(visualHeight),
     keyboardHeight,
@@ -85,6 +118,10 @@ export function readViewport(): ViewportReading {
     innerHeight: window.innerHeight,
     visualHeight: visual ? visual.height : null,
     visualOffsetTop: visual ? visual.offsetTop : 0,
+    isStandalone:
+      window.matchMedia('(display-mode: standalone)').matches ||
+      // iOS до сих пор сообщает об этом собственным нестандартным полем
+      (navigator as { standalone?: boolean }).standalone === true,
   };
 }
 
@@ -105,6 +142,9 @@ export function installViewportMetrics(): () => void {
   };
 
   const updateAfterRotation = () => {
+    // Единственный случай, когда окно честно становится больше: запомненную
+    // высоту сбрасываем, иначе в альбомной ориентации осталась бы портретная
+    appHeight = 0;
     update();
     window.clearTimeout(settleTimer);
     settleTimer = window.setTimeout(update, ORIENTATION_SETTLE_MS);
