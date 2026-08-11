@@ -12,8 +12,15 @@ interface Props {
   onClose: () => void;
   householdId: string;
   spaceId: string | null;
-  /** Выбранные пользователем товары переводятся в карточки через этот коллбэк */
-  onApply: (items: (Partial<Item> & { name: string })[]) => Promise<void>;
+  /**
+   * Выбранные пользователем товары переводятся в карточки через этот коллбэк.
+   * Возвращает число реально созданных карточек — не обязательно равное
+   * длине входного списка: часть могла не создаться, и об этом сообщает
+   * сам колбэк (он никогда не бросает исключение, чтобы неудача одной
+   * карточки не выглядела неудачей всех и не провоцировала повторную
+   * отправку уже созданных).
+   */
+  onApply: (items: (Partial<Item> & { name: string })[]) => Promise<number>;
 }
 
 type Stage = 'pick' | 'scanning' | 'review';
@@ -106,12 +113,13 @@ export function RoomScanSheet({ open, onClose, householdId, spaceId, onApply }: 
           space_id: spaceId,
         }));
 
-      await onApply(toCreate);
+      // onApply не бросает исключение сам — неудача одной карточки не
+      // должна выглядеть неудачей всех и провоцировать повторную отправку
+      // уже созданных (дубли: у каждой карточки свой новый id)
+      const createdCount = await onApply(toCreate);
       reset();
       onClose();
-      toast.show(
-        t('ai.itemsCreated', { count: toCreate.length }),
-      );
+      toast.show(t('ai.itemsCreated', { count: createdCount }));
     } finally {
       setBusy(false);
     }

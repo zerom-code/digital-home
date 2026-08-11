@@ -8,12 +8,13 @@ import { groupBySpace, flattenItems } from '@/lib/tree';
 import { ItemTile } from '@/features/items/ItemCard';
 import { AddItemSheet } from '@/features/items/AddItemSheet';
 import { RoomScanSheet } from '@/features/ai/RoomScanSheet';
-import { Button, EmptyState, Spinner } from '@/components/ui';
+import { Button, EmptyState, Spinner, useToast } from '@/components/ui';
 import { PageHeader } from '@/app/PageHeader';
 
 export function RoomScreen() {
   const { spaceId } = useParams<{ spaceId: string }>();
   const { t } = useTranslation();
+  const toast = useToast();
   const { householdId, canWrite } = useActiveHousehold();
 
   const spaces = useSpaces(householdId);
@@ -100,8 +101,12 @@ export function RoomScreen() {
           householdId={householdId}
           spaceId={isOrphans ? null : spaceId ?? null}
           onApply={async (itemsToCreate) => {
-            // Создаём карточки в параллель
-            await Promise.all(
+            // allSettled, а не all: одна неудачная карточка не должна
+            // помешать созданию остальных и не должна выглядеть как
+            // «ничего не сохранилось» — пользователь либо ретраит весь
+            // список и получает дубли того, что уже создалось, либо
+            // теряет то, что реально прошло
+            const results = await Promise.allSettled(
               itemsToCreate.map((item) =>
                 create.mutateAsync({
                   name: item.name,
@@ -110,7 +115,17 @@ export function RoomScreen() {
                 })
               )
             );
+
+            const created = results.filter((r) => r.status === 'fulfilled').length;
+            const failed = results.length - created;
+            if (failed > 0) {
+              toast.show(t('ai.someItemsFailed', { failed, total: results.length }), {
+                tone: 'danger',
+              });
+            }
+
             setScanning(false);
+            return created;
           }}
         />
       )}

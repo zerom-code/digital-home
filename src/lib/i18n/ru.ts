@@ -427,6 +427,7 @@ export const ru = {
       selectItems: 'Нашёл {{found}} приборов, {{selected}} выбрано',
       itemsCreated: 'Создано {{count}} карточек',
       createItems: 'Создать {{count}} карточек',
+      someItemsFailed: 'Не удалось создать {{failed}} из {{total}} — остальные сохранены',
 
       receiptScanTitle: 'Отсканировать чек',
       receiptHint: 'Сфотографируй кассовый чек — вытащу дату покупки и цену.',
