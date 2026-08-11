@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,7 @@ import { Button, Card, Chip, EmptyState, InviteBlock, Input, Select, Sheet, Spin
 import { PageHeader } from '@/app/PageHeader';
 import { DocumentsBlock } from '@/features/documents/DocumentsBlock';
 import { NameplateSheet } from '@/features/ai/NameplateSheet';
+import { ReceiptScanSheet } from '@/features/ai/ReceiptScanSheet';
 import { EnergyBlock } from '@/features/energy/EnergyBlock';
 import { useSignedPhoto } from './ItemCard';
 
@@ -35,6 +36,8 @@ export function ItemScreen() {
 
   const [editing, setEditing] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [scanningReceipt, setScanningReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<Record<string, any> | null>(null);
 
   if (item.isLoading) return <Spinner label={t('common.loading')} />;
   if (!item.data) {
@@ -210,11 +213,27 @@ export function ItemScreen() {
         open={editing}
         onClose={() => setEditing(false)}
         item={value}
+        householdId={householdId}
+        receiptData={receiptData}
+        onReceiptDataApplied={() => setReceiptData(null)}
+        onReceiptScan={() => setScanningReceipt(true)}
         onSave={async (patch) => {
           await update.mutateAsync({ id: value.id, patch });
           setEditing(false);
         }}
       />
+
+      {householdId && (
+        <ReceiptScanSheet
+          open={scanningReceipt}
+          onClose={() => setScanningReceipt(false)}
+          householdId={householdId}
+          onApply={async (data) => {
+            setReceiptData(data);
+            setScanningReceipt(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -251,19 +270,28 @@ function Facts({ item }: { item: Item }) {
   );
 }
 
+interface EditSheetProps {
+  open: boolean;
+  onClose: () => void;
+  item: Item;
+  householdId: string | null;
+  receiptData: Record<string, any> | null;
+  onReceiptDataApplied: () => void;
+  onReceiptScan: () => void;
+  onSave: (patch: Partial<Item>) => Promise<void>;
+}
+
 function EditSheet({
   open,
   onClose,
   item,
+  householdId,
+  receiptData,
+  onReceiptDataApplied,
+  onReceiptScan,
   onSave,
-}: {
-  open: boolean;
-  onClose: () => void;
-  item: Item;
-  onSave: (patch: Partial<Item>) => Promise<void>;
-}) {
+}: EditSheetProps) {
   const { t } = useTranslation();
-  const { householdId } = useActiveHousehold();
   const spaces = useSpaces(householdId);
   const categories = useCategories();
 
@@ -288,6 +316,23 @@ function EditSheet({
     setForm((current) => ({ ...current, [key]: value }));
 
   const blank = (value: string) => (value.trim() === '' ? null : value.trim());
+
+  // Применяем данные из чека, когда они становятся доступны
+  useEffect(() => {
+    if (!receiptData) return;
+
+    if (receiptData.purchase_date) {
+      set('purchased_at', receiptData.purchase_date);
+    }
+    if (receiptData.total_price != null) {
+      set('price', receiptData.total_price.toString());
+    }
+    if (receiptData.seller) {
+      set('seller', receiptData.seller);
+    }
+
+    onReceiptDataApplied();
+  }, [receiptData, onReceiptDataApplied]);
 
   return (
     <Sheet open={open} onClose={onClose} title={t('common.edit')}>
@@ -344,12 +389,20 @@ function EditSheet({
         <Input label={t('item.model')} value={form.model} onChange={(e) => set('model', e.target.value)} />
         <Input label={t('item.serial')} value={form.serial_number} onChange={(e) => set('serial_number', e.target.value)} />
 
-        <Input
-          label={t('item.purchasedAt')}
-          type="date"
-          value={form.purchased_at}
-          onChange={(e) => set('purchased_at', e.target.value)}
-        />
+        <div className="space-y-3">
+          <Input
+            label={t('item.purchasedAt')}
+            type="date"
+            value={form.purchased_at}
+            onChange={(e) => set('purchased_at', e.target.value)}
+          />
+          {householdId && (
+            <Button variant="secondary" size="sm" block onClick={onReceiptScan}>
+              📷 {t('ai.receiptScanTitle')}
+            </Button>
+          )}
+        </div>
+
         <Input
           label={t('item.warrantyMonths')}
           type="number"

@@ -426,6 +426,16 @@ export const ru = {
       selectItems: 'Нашёл {{found}} приборов, {{selected}} выбрано',
       itemsCreated: 'Создано {{count}} карточек',
       createItems: 'Создать {{count}} карточек',
+
+      receiptScanTitle: 'Отсканировать чек',
+      receiptHint: 'Сфотографируй кассовый чек — вытащу дату покупки и цену.',
+      receiptTipTitle: 'Для распознавания:',
+      receiptTip: 'Весь чек в кадре, хорошо видны цифры даты и суммы, нет бликов.',
+      receiptExtracted: 'Что извлёк из чека:',
+      dateExtracted: 'Дата покупки: {{date}}',
+      itemsFound: 'На чеке {{count}} позиций',
+      andMore: 'ещё {{count}}',
+      receiptApplied: 'Дата и цена заполнены',
     },
 
     push: {
