@@ -12,6 +12,7 @@ import { PageHeader } from '@/app/PageHeader';
 import { DocumentsBlock } from '@/features/documents/DocumentsBlock';
 import { NameplateSheet } from '@/features/ai/NameplateSheet';
 import { ReceiptScanSheet } from '@/features/ai/ReceiptScanSheet';
+import type { ReceiptScanResult } from '@/features/ai/useReceiptScan';
 import { EnergyBlock } from '@/features/energy/EnergyBlock';
 import { useSignedPhoto } from './ItemCard';
 
@@ -37,7 +38,7 @@ export function ItemScreen() {
   const [editing, setEditing] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
-  const [receiptData, setReceiptData] = useState<Record<string, any> | null>(null);
+  const [receiptData, setReceiptData] = useState<Partial<ReceiptScanResult> | null>(null);
 
   if (item.isLoading) return <Spinner label={t('common.loading')} />;
   if (!item.data) {
@@ -183,7 +184,6 @@ export function ItemScreen() {
           open={scanning}
           onClose={() => setScanning(false)}
           householdId={householdId}
-          itemId={value.id}
           onApply={async (patch, result) => {
             // Обновляем саму вещь: бренд, модель, серийник, категорию
             const newCategoryId = patch.category_id ?? value.category_id;
@@ -275,7 +275,7 @@ interface EditSheetProps {
   onClose: () => void;
   item: Item;
   householdId: string | null;
-  receiptData: Record<string, any> | null;
+  receiptData: Partial<ReceiptScanResult> | null;
   onReceiptDataApplied: () => void;
   onReceiptScan: () => void;
   onSave: (patch: Partial<Item>) => Promise<void>;
@@ -397,7 +397,7 @@ function EditSheet({
             onChange={(e) => set('purchased_at', e.target.value)}
           />
           {householdId && (
-            <Button variant="secondary" size="sm" block onClick={onReceiptScan}>
+            <Button variant="secondary" block onClick={onReceiptScan}>
               📷 {t('ai.receiptScanTitle')}
             </Button>
           )}

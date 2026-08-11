@@ -36,6 +36,9 @@ supabase/migrations/0001_schema.sql
 supabase/migrations/0002_rls.sql
 supabase/migrations/0003_rpc.sql
 supabase/migrations/0004_storage.sql
+supabase/migrations/0005_tasks_and_push.sql
+supabase/migrations/0006_energy.sql
+supabase/migrations/0007_ai_cache.sql
 ```
 
 Затем сгенерируйте и выполните справочник категорий:
@@ -59,7 +62,7 @@ psql "$DATABASE_URL" -f supabase/seed/categories.sql
 ```sql
 select count(*) from public.item_categories;   -- 99
 select count(*) from pg_policies
- where schemaname in ('public','storage');     -- 51
+ where schemaname in ('public','storage');     -- 53
 ```
 
 Если политик меньше — какая-то миграция не прошла целиком. Не запускайте
@@ -118,16 +121,21 @@ select cron.schedule(
 );
 ```
 
-### Распознавание шильдиков
+### Распознавание фото (фаза 4)
 
 ```bash
 supabase secrets set OPENAI_API_KEY=sk-...
 supabase functions deploy ai-extract-nameplate
+supabase functions deploy ai-scan-room
+supabase functions deploy ai-scan-receipt
 ```
 
-Ключ живёт только здесь и **никогда** не получает префикс `VITE_`
-([ADR-009](07-decisions.md)). По умолчанию распознавание выключено:
-включается в приложении, «Ещё» → «Распознавание с фото», с явным согласием.
+Один и тот же ключ обслуживает все три функции. Он живёт только здесь и
+**никогда** не получает префикс `VITE_` ([ADR-009](07-decisions.md)). По
+умолчанию распознавание выключено: включается в приложении, «Ещё» →
+«Распознавание с фото», с явным согласием — до этого момента все три кнопки
+(«Сфотографировать табличку», «Сканировать комнату», «Отсканировать чек»)
+в интерфейсе просто вернут понятную ошибку, приложение при этом не падает.
 
 ---
 

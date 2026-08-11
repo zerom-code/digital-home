@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Chip, Input, Sheet, useToast } from '@/components/ui';
+import { Button, Input, Sheet, useToast } from '@/components/ui';
 import { useReceiptScan, type ReceiptScanResult } from './useReceiptScan';
 
 interface Props {

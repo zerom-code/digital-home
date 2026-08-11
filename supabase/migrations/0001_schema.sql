@@ -534,16 +534,6 @@ create table public.ai_usage (
 
 create index ai_usage_household_idx on public.ai_usage (household_id, created_at desc);
 
-create table public.ai_cache (
-  input_hash varchar primary key,
-  feature    text not null,
-  model      text not null,
-  result     jsonb not null,
-  created_at timestamptz not null default now()
-);
-
-create index ai_cache_feature_idx on public.ai_cache (feature, created_at desc);
-
 
 -- ============================================================================
 -- Консистентность денормализованного household_id

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useCategories } from '@/features/home/useHomeData';
 import type { Item } from '@/lib/supabase/types';
-import { Button, Chip, Input, Sheet, useToast } from '@/components/ui';
+import { Button, Chip, Sheet, useToast } from '@/components/ui';
 import { useRoomScan, type RoomItem } from './useRoomScan';
 
 interface Props {
@@ -96,15 +96,14 @@ export function RoomScanSheet({ open, onClose, householdId, spaceId, onApply }: 
     try {
       const toCreate = Array.from(selected)
         .sort()
-        .map((i) => {
-          const item = items[i];
-          return {
-            name: item.name,
-            // brand будет сохранён при редактировании карточки, сейчас не поддерживается
-            category_id: item.category_id,
-            space_id: spaceId,
-          };
-        });
+        .map((i) => items[i])
+        .filter((item): item is RoomItem => item !== undefined)
+        .map((item) => ({
+          name: item.name,
+          // brand будет сохранён при редактировании карточки, сейчас не поддерживается
+          category_id: item.category_id,
+          space_id: spaceId,
+        }));
 
       await onApply(toCreate);
       reset();
@@ -197,26 +196,9 @@ export function RoomScanSheet({ open, onClose, householdId, spaceId, onApply }: 
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-ink">{item.name}</p>
                         <div className="flex gap-2 mt-1 flex-wrap">
-                          {category && (
-                            <Chip size="sm" tone="accent">
-                              {category.name_ru}
-                            </Chip>
-                          )}
-                          {item.brand && (
-                            <Chip size="sm" tone="neutral">
-                              {item.brand}
-                            </Chip>
-                          )}
-                          <Chip
-                            size="sm"
-                            tone={
-                              item.confidence === 'high'
-                                ? 'positive'
-                                : item.confidence === 'medium'
-                                  ? 'accent'
-                                  : 'warn'
-                            }
-                          >
+                          {category && <Chip tone="accent">{category.name_ru}</Chip>}
+                          {item.brand && <Chip tone="neutral">{item.brand}</Chip>}
+                          <Chip tone={item.confidence === 'low' ? 'warn' : 'accent'}>
                             {t(`ai.confidence.${item.confidence}`)}
                           </Chip>
                         </div>

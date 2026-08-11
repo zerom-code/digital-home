@@ -11,7 +11,6 @@ interface Props {
   open: boolean;
   onClose: () => void;
   householdId: string;
-  itemId: string;
   /** Подтверждённый черновик уходит в карточку, а не в базу напрямую */
   onApply: (patch: Partial<Item>, result: NameplateResult) => Promise<void>;
 }
@@ -25,7 +24,7 @@ type Stage = 'pick' | 'scanning' | 'review';
  * сфотографировать табличку готов. Именно в этом зазоре вся ценность
  * ИИ-слоя (docs/08-ai.md).
  */
-export function NameplateSheet({ open, onClose, householdId, itemId, onApply }: Props) {
+export function NameplateSheet({ open, onClose, householdId, onApply }: Props) {
   const { t } = useTranslation();
   const toast = useToast();
   const categories = useCategories();
