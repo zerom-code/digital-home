@@ -253,7 +253,21 @@ describe('итог по квартире', () => {
       { kwh: 5, cost: 21.6, nightShare: 0 },
       { kwh: null, cost: null, nightShare: 0 },
     ]);
-    expect(result).toEqual({ kwh: 15, cost: 64.8, unknown: 1, counted: 2 });
+
+    expect(result.kwh).toBe(15);
+    expect(result.counted).toBe(2);
+    expect(result.unknown).toBe(1);
+    // Сумма денег — через toBeCloseTo: 43.2 + 21.6 в двоичной дроби даёт
+    // 64.80000000000001. Округлять в расчёте ради красивого равенства нельзя,
+    // это работа форматирования — сложение копеек тут ни при чём
+    expect(result.cost).toBeCloseTo(64.8, 10);
+  });
+
+  it('вещь без стоимости не ломает сумму', () => {
+    // Киловатты посчитались, а тариф не заполнен: вещь в итоге по расходу
+    // есть, в деньгах её просто нет
+    const result = totals([{ kwh: 10, cost: null, nightShare: 0 }]);
+    expect(result).toEqual({ kwh: 10, cost: 0, unknown: 0, counted: 1 });
   });
 
   it('пустая квартира — нули, а не ошибка', () => {
