@@ -487,6 +487,12 @@ export type Database = {
         Args: { p_query: string };
         Returns: Item[];
       };
+      meter_monthly_usage: {
+        Args: { p_meter_id: string };
+        // null — показаний меньше двух либо они противоречивы
+        // (supabase/migrations/0006_energy.sql)
+        Returns: number | null;
+      };
       refresh_my_tasks: {
         Args: Record<PropertyKey, never>;
         Returns: number;

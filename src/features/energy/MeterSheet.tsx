@@ -24,7 +24,7 @@ export function MeterSheet({ open, onClose, meter, householdId }: Props) {
   const toast = useToast();
 
   const addMeter = useAddMeter(householdId);
-  const addReading = useAddReading(householdId, meter?.id ?? null);
+  const addReading = useAddReading(householdId);
   const readings = useReadings(meter?.id ?? null);
 
   const [day, setDay] = useState('');
@@ -51,12 +51,15 @@ export function MeterSheet({ open, onClose, meter, householdId }: Props) {
           setBusy(true);
           try {
             // Счётчика ещё нет — заводим на лету, чтобы показания было куда
-            // класть
-            if (!meter) {
-              await addMeter.mutateAsync({ zones: night.trim() ? 2 : 1 });
-            }
+            // класть. Его id берём из ответа, а не из пропа: тот обновится
+            // только на следующем рендере, а показания нужны сейчас
+            const meterId = meter
+              ? meter.id
+              : await addMeter.mutateAsync({ zones: night.trim() ? 2 : 1 });
+
             const nightValue = Number(night.replace(',', '.'));
             await addReading.mutateAsync({
+              meterId,
               value_day: dayValue,
               value_night: night.trim() && Number.isFinite(nightValue) ? nightValue : null,
             });

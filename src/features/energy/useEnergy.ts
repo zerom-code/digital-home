@@ -98,9 +98,10 @@ export function useSaveTariff(householdId: string | null) {
         return;
       }
 
+      const { id: _ignored, ...fields } = patch;
       const { error } = await supabase
         .from('tariffs')
-        .insert({ household_id: householdId, ...patch });
+        .insert({ ...fields, household_id: householdId });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -141,10 +142,13 @@ export function useSaveEnergyProfile(householdId: string | null) {
 
       // На вещь приходится ровно один профиль (unique на item_id в схеме),
       // поэтому upsert по нему, а не «выбрать и решить»
+      // Ключи ставим после патча, а не до: иначе они оказались бы
+      // необязательными для типов и — что важнее — перезаписываемыми чужим
+      // household_id из случайно переданного поля
       const { error } = await supabase
         .from('energy_profiles')
         .upsert(
-          { household_id: householdId, item_id: itemId, mode: 'typical', ...patch },
+          { mode: 'typical', ...patch, household_id: householdId, item_id: itemId },
           { onConflict: 'item_id' }
         );
       if (error) throw error;
@@ -244,16 +248,20 @@ export function useMeterUsage(meterId: string | null) {
   });
 }
 
+/** Заводит счётчик и возвращает его id — он тут же нужен для показаний. */
 export function useAddMeter(householdId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (patch: Partial<Meter>) => {
+    mutationFn: async (patch: Partial<Meter>): Promise<string> => {
       if (!householdId) throw new Error('Нет активного дома');
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('meters')
-        .insert({ household_id: householdId, kind: 'electricity', ...patch });
+        .insert({ kind: 'electricity', ...patch, household_id: householdId })
+        .select('id')
+        .single();
       if (error) throw error;
+      return data.id;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.meters(householdId ?? 'none') });
@@ -261,20 +269,38 @@ export function useAddMeter(householdId: string | null) {
   });
 }
 
-export function useAddReading(householdId: string | null, meterId: string | null) {
+/**
+ * Показания счётчика.
+ *
+ * `meterId` приходит аргументом вызова, а не хука. Счётчик может появиться
+ * прямо сейчас — его заводят на лету при первом же вводе показаний, — и хук,
+ * захвативший `null` на прошлом рендере, отправил бы показания в никуда:
+ * состояние родителя к этому моменту ещё не обновилось.
+ */
+export function useAddReading(householdId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (patch: { value_day?: number | null; value_night?: number | null; read_at?: string }) => {
-      if (!householdId || !meterId) throw new Error('Нет счётчика');
+    mutationFn: async ({
+      meterId,
+      ...patch
+    }: {
+      meterId: string;
+      value_day?: number | null;
+      value_night?: number | null;
+      read_at?: string;
+    }) => {
+      if (!householdId) throw new Error('Нет активного дома');
       const { error } = await supabase
         .from('meter_readings')
-        .insert({ household_id: householdId, meter_id: meterId, ...patch });
+        .insert({ ...patch, household_id: householdId, meter_id: meterId });
       if (error) throw error;
+      return meterId;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['meter-readings', meterId ?? 'none'] });
-      void queryClient.invalidateQueries({ queryKey: keys.meterUsage(meterId ?? 'none') });
+    onSuccess: (meterId) => {
+      void queryClient.invalidateQueries({ queryKey: ['meter-readings', meterId] });
+      void queryClient.invalidateQueries({ queryKey: keys.meterUsage(meterId) });
+      void queryClient.invalidateQueries({ queryKey: keys.meters(householdId ?? 'none') });
     },
   });
 }

@@ -39,8 +39,11 @@ export function EnergyBlock({ itemId, householdId, categoryId, canWrite }: Props
     : null;
 
   // Ни своих значений, ни типовых у категории — предлагаем заполнить, а не
-  // показываем пустую карточку с прочерками
-  if (!result || result.kwh === null) {
+  // показываем пустую карточку с прочерками.
+  // `!resolved` здесь не лишняя проверка при живом `!result`: result выведен
+  // из resolved, но связать их за нас некому, и без неё resolved ниже
+  // остаётся возможно пустым
+  if (!resolved || !result || result.kwh === null) {
     return (
       <>
         <InviteBlock
