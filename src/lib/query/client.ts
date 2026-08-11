@@ -79,4 +79,8 @@ export const keys = {
   items: (householdId: string) => ['items', householdId] as const,
   item: (id: string) => ['item', id] as const,
   categories: ['categories'] as const,
+  tariff: (householdId: string) => ['tariff', householdId] as const,
+  energyProfiles: (householdId: string) => ['energy-profiles', householdId] as const,
+  meters: (householdId: string) => ['meters', householdId] as const,
+  meterUsage: (meterId: string) => ['meter-usage', meterId] as const,
 };

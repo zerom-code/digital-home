@@ -15,6 +15,7 @@ import { HouseholdScreen } from '@/features/household/HouseholdScreen';
 import { JoinScreen } from '@/features/household/JoinScreen';
 import { MoreScreen } from '@/features/more/MoreScreen';
 import { TasksScreen } from '@/features/tasks/TasksScreen';
+import { EnergyScreen } from '@/features/energy/EnergyScreen';
 import { InstallCoach } from '@/features/pwa/InstallCoach';
 import { OfflineBanner, UpdateToast } from '@/features/pwa/StatusBanners';
 import { startSync } from '@/lib/outbox';
@@ -133,7 +134,7 @@ export function App() {
           <Route path="/more" element={<MoreScreen />} />
 
           <Route path="/tasks" element={<TasksScreen />} />
-          <Route path="/energy" element={<ComingSoon icon="⚡" title={t('tabs.energy')} />} />
+          <Route path="/energy" element={<EnergyScreen />} />
 
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />
@@ -147,12 +148,6 @@ export function App() {
       <UpdateToast />
     </div>
   );
-}
-
-/** Вкладки следующих фаз: честная заглушка вместо пустого экрана. */
-function ComingSoon({ icon, title }: { icon: string; title: string }) {
-  const { t } = useTranslation();
-  return <EmptyState icon={icon} title={title} text={t('more.phaseNote')} />;
 }
 
 function NotFound() {

@@ -10,6 +10,7 @@ import { Button, Card, Chip, EmptyState, InviteBlock, Input, Select, Sheet, Spin
 import { PageHeader } from '@/app/PageHeader';
 import { DocumentsBlock } from '@/features/documents/DocumentsBlock';
 import { NameplateSheet } from '@/features/ai/NameplateSheet';
+import { EnergyBlock } from '@/features/energy/EnergyBlock';
 import { useSignedPhoto } from './ItemCard';
 
 /**
@@ -156,8 +157,14 @@ export function ItemScreen() {
           <DocumentsBlock itemId={value.id} householdId={householdId} canWrite={canWrite} />
         )}
 
-        {/* Энергия — фаза 3. Показываем честно, а не прячем */}
-        <InviteBlock icon="⚡" title={t('item.energyEmptyTitle')} text={t('item.energyEmptyText')} />
+        {/* Энергия: считаем сразу, как только у категории есть типовые
+            значения — не дожидаясь, пока человек что-то заполнит */}
+        <EnergyBlock
+          itemId={value.id}
+          householdId={householdId}
+          categoryId={value.category_id}
+          canWrite={canWrite}
+        />
 
         {canWrite && (
           <Button variant="danger" block onClick={() => void handleDelete()}>

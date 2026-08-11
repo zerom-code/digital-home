@@ -36,6 +36,10 @@ export type HomeKind = 'apartment' | 'house' | 'dacha' | 'garage' | 'office' | '
 export type DocumentKind = 'manual' | 'receipt' | 'warranty' | 'photo' | 'contract' | 'other';
 export type EnergyMode = 'typical' | 'label' | 'power_hours' | 'per_cycle';
 export type LabelUnit = 'kwh_year' | 'kwh_100cycles' | 'kwh_1000h';
+export type TariffKind = 'single' | 'two_zone';
+export type MeterKind = 'electricity' | 'water_cold' | 'water_hot' | 'gas' | 'heat';
+export type EnergySource = 'user' | 'category_default' | 'ai_nameplate';
+export type Confidence = 'low' | 'medium' | 'high';
 export type TaskStatus = 'open' | 'done' | 'skipped';
 export type TaskSource = 'manual' | 'warranty' | 'maintenance' | 'consumable';
 
@@ -218,6 +222,84 @@ export type Consumable = {
   deleted_at: string | null;
 };
 
+/**
+ * Энергопрофиль вещи — по одному на вещь (в базе стоит unique на item_id).
+ *
+ * Заполненными бывают только поля выбранного режима: у холодильника это
+ * power_w и duty_cycle, у стиралки — kwh_per_cycle. Остальные так и остаются
+ * пустыми, и это норма, а не недозаполненность (docs/03-energy.md).
+ */
+export type EnergyProfile = {
+  id: string;
+  household_id: string;
+  item_id: string;
+  mode: EnergyMode;
+  power_w: number | null;
+  standby_w: number | null;
+  duty_cycle: number | null;
+  hours_per_day: number | null;
+  days_per_week: number | null;
+  kwh_per_cycle: number | null;
+  cycles_per_week: number | null;
+  label_value: number | null;
+  label_unit: LabelUnit | null;
+  night_share: number | null;
+  seasonality: Record<string, number> | null;
+  source: EnergySource | null;
+  confidence: Confidence | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/**
+ * Тариф с историей: effective_from / effective_to.
+ *
+ * Старые записи не удаляются и не переписываются — иначе пересчёт прошлых
+ * месяцев врал бы по сегодняшней цене.
+ */
+export type Tariff = {
+  id: string;
+  household_id: string;
+  name: string | null;
+  kind: TariffKind;
+  rate_day: number | null;
+  rate_night: number | null;
+  night_start: string | null;
+  night_end: string | null;
+  standing_charge: number | null;
+  currency: string | null;
+  effective_from: string;
+  effective_to: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Meter = {
+  id: string;
+  household_id: string;
+  home_id: string | null;
+  kind: MeterKind | null;
+  serial: string | null;
+  zones: number;
+  unit: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
+export type MeterReading = {
+  id: string;
+  household_id: string;
+  meter_id: string;
+  read_at: string;
+  value_day: number | null;
+  value_night: number | null;
+  photo_path: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type ServiceRecord = {
   id: string;
   household_id: string;
@@ -344,6 +426,30 @@ export type Database = {
         Row: ServiceRecord;
         Insert: Insertable<ServiceRecord, 'household_id' | 'item_id'>;
         Update: Updatable<ServiceRecord>;
+        Relationships: NoRelations;
+      };
+      energy_profiles: {
+        Row: EnergyProfile;
+        Insert: Insertable<EnergyProfile, 'household_id' | 'item_id'>;
+        Update: Updatable<EnergyProfile>;
+        Relationships: NoRelations;
+      };
+      tariffs: {
+        Row: Tariff;
+        Insert: Insertable<Tariff, 'household_id'>;
+        Update: Updatable<Tariff>;
+        Relationships: NoRelations;
+      };
+      meters: {
+        Row: Meter;
+        Insert: Insertable<Meter, 'household_id'>;
+        Update: Updatable<Meter>;
+        Relationships: NoRelations;
+      };
+      meter_readings: {
+        Row: MeterReading;
+        Insert: Insertable<MeterReading, 'household_id' | 'meter_id'>;
+        Update: Updatable<MeterReading>;
         Relationships: NoRelations;
       };
       push_subscriptions: {
