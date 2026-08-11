@@ -3,10 +3,11 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { useActiveHousehold } from '@/features/household/useHousehold';
-import { useItems, useSpaces } from './useHomeData';
+import { useItems, useSpaces, useCreateItem } from './useHomeData';
 import { groupBySpace, flattenItems } from '@/lib/tree';
 import { ItemTile } from '@/features/items/ItemCard';
 import { AddItemSheet } from '@/features/items/AddItemSheet';
+import { RoomScanSheet } from '@/features/ai/RoomScanSheet';
 import { Button, EmptyState, Spinner } from '@/components/ui';
 import { PageHeader } from '@/app/PageHeader';
 
@@ -17,7 +18,9 @@ export function RoomScreen() {
 
   const spaces = useSpaces(householdId);
   const items = useItems(householdId);
+  const create = useCreateItem(householdId);
   const [adding, setAdding] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const isOrphans = spaceId === 'none';
 
@@ -43,7 +46,16 @@ export function RoomScreen() {
             icon="📦"
             title={t('room.emptyTitle')}
             text={t('room.emptyText')}
-            action={canWrite && <Button onClick={() => setAdding(true)}>{t('common.add')}</Button>}
+            action={
+              canWrite && (
+                <div className="flex gap-2">
+                  <Button onClick={() => setAdding(true)}>{t('common.add')}</Button>
+                  <Button variant="secondary" onClick={() => setScanning(true)}>
+                    📷 {t('ai.roomScanTitle')}
+                  </Button>
+                </div>
+              )
+            }
           />
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -52,14 +64,24 @@ export function RoomScreen() {
             ))}
 
             {canWrite && (
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line-2 text-ink-2 active:bg-surface-2"
-              >
-                <span className="text-2xl" aria-hidden="true">➕</span>
-                <span className="text-sm font-medium">{t('common.add')}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line-2 text-ink-2 active:bg-surface-2"
+                >
+                  <span className="text-2xl" aria-hidden="true">➕</span>
+                  <span className="text-sm font-medium">{t('common.add')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScanning(true)}
+                  className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line-2 text-ink-2 active:bg-surface-2"
+                >
+                  <span className="text-2xl" aria-hidden="true">📷</span>
+                  <span className="text-sm font-medium">{t('ai.roomScanTitle')}</span>
+                </button>
+              </>
             )}
           </div>
         )}
@@ -70,6 +92,28 @@ export function RoomScreen() {
         onClose={() => setAdding(false)}
         defaultSpaceId={isOrphans ? null : spaceId ?? null}
       />
+
+      {householdId && (
+        <RoomScanSheet
+          open={scanning}
+          onClose={() => setScanning(false)}
+          householdId={householdId}
+          spaceId={isOrphans ? null : spaceId ?? null}
+          onApply={async (itemsToCreate) => {
+            // Создаём карточки в параллель
+            await Promise.all(
+              itemsToCreate.map((item) =>
+                create.mutateAsync({
+                  name: item.name,
+                  space_id: item.space_id,
+                  category_id: item.category_id,
+                })
+              )
+            );
+            setScanning(false);
+          }}
+        />
+      )}
     </div>
   );
 }
