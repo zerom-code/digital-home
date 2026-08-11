@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useActiveHousehold } from '@/features/household/useHousehold';
 import { useCategories, useDeleteItem, useItem, useSpaces, useUpdateItem } from '@/features/home/useHomeData';
-import { useSaveEnergyProfile } from '@/features/energy/useEnergy';
+import { useEnergyProfiles, useSaveEnergyProfile } from '@/features/energy/useEnergy';
 import { computeWarranty, describeWarranty } from '@/lib/warranty';
 import type { Item } from '@/lib/supabase/types';
 import { Button, Card, Chip, EmptyState, InviteBlock, Input, Select, Sheet, Spinner, Textarea, useToast } from '@/components/ui';
@@ -32,6 +32,7 @@ export function ItemScreen() {
   const item = useItem(itemId);
   const categories = useCategories();
   const update = useUpdateItem(householdId);
+  const energyProfiles = useEnergyProfiles(householdId);
   const saveEnergyProfile = useSaveEnergyProfile(householdId);
   const { remove, restore } = useDeleteItem(householdId);
 
@@ -189,17 +190,34 @@ export function ItemScreen() {
             const newCategoryId = patch.category_id ?? value.category_id;
             await update.mutateAsync({ id: value.id, patch });
 
-            // Сохраняем мощность в энергопрофиль, если она есть
-            if (result.power_w && newCategoryId) {
-              const targetCategory = categories.data?.find((c) => c.id === newCategoryId);
-              const hoursPerDay = targetCategory?.default_hours_per_day ?? 4; // Типовое значение
+            // Мощность с шильдика точнее любого справочника — но она
+            // подставима только в те режимы, где формула вообще её использует
+            // (typical, power_hours). У per_cycle и label расход считается
+            // от циклов или значения с наклейки — свободного ватта там нет,
+            // и подсовывать его значило бы просто выдумать режим (calc.ts).
+            // Существующий профиль от самого человека (source: 'user') не
+            // трогаем — распознавание шильдика не должно тихо стирать то,
+            // что он уточнил руками.
+            const existing = energyProfiles.data?.find((row) => row.item_id === value.id);
+            const category = newCategoryId
+              ? categories.data?.find((c) => c.id === newCategoryId)
+              : undefined;
+            const mode = category?.default_energy_mode;
 
+            if (
+              result.power_w &&
+              category &&
+              existing?.source !== 'user' &&
+              (mode === 'typical' || mode === 'power_hours')
+            ) {
               await saveEnergyProfile.mutateAsync({
                 itemId: value.id,
                 patch: {
-                  mode: 'power_hours',
+                  mode,
                   power_w: result.power_w,
-                  hours_per_day: hoursPerDay,
+                  standby_w: category.default_standby_w,
+                  duty_cycle: category.default_duty_cycle,
+                  hours_per_day: category.default_hours_per_day,
                   source: 'ai_nameplate',
                   confidence: result.confidence,
                 },
@@ -304,6 +322,7 @@ function EditSheet({
     space_id: item.space_id ?? '',
     purchased_at: item.purchased_at ?? '',
     price: item.price?.toString() ?? '',
+    currency: item.currency ?? '',
     seller: item.seller ?? '',
     warranty_months: item.warranty_months?.toString() ?? '',
     status: item.status,
@@ -330,6 +349,9 @@ function EditSheet({
     if (receiptData.seller) {
       set('seller', receiptData.seller);
     }
+    if (receiptData.currency) {
+      set('currency', receiptData.currency);
+    }
 
     onReceiptDataApplied();
   }, [receiptData, onReceiptDataApplied]);
@@ -351,6 +373,7 @@ function EditSheet({
               space_id: blank(form.space_id),
               purchased_at: blank(form.purchased_at),
               price: form.price.trim() ? Number(form.price) : null,
+              currency: blank(form.currency),
               seller: blank(form.seller),
               warranty_months: form.warranty_months.trim() ? Number(form.warranty_months) : null,
               status: form.status,

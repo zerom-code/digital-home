@@ -24,6 +24,7 @@ export const ru = {
       done: 'Готово',
       save: 'Сохранить',
       saved: 'Сохранено',
+      use: 'Использовать',
       cancel: 'Отмена',
       back: 'Назад',
       delete: 'Удалить',

@@ -38,7 +38,11 @@ const SCHEMA = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['items', 'total_price', 'purchase_date'],
+    // strict: true требует, чтобы ВСЕ свойства были перечислены здесь —
+    // необязательность выражается только через nullable-тип (та же схема,
+    // что и в ai-extract-nameplate). seller/currency пропущены не будут:
+    // без них OpenAI отклонил бы запрос на каждом вызове
+    required: ['items', 'total_price', 'purchase_date', 'seller', 'currency'],
     properties: {
       items: {
         type: 'array',
@@ -94,13 +98,15 @@ Deno.serve(async (request) => {
 
   if (!householdId || !imageBase64) return fail('Нужны householdId и image');
 
+  // Гостю чек не показываем: доквижн явно исключает цены и чеки из гостевого
+  // доступа (docs/00-vision.md), а этот эндпоинт как раз и возвращает цену
   const { data: membership } = await asUser
     .from('household_members')
     .select('role')
     .eq('household_id', householdId)
     .maybeSingle();
 
-  if (!membership) {
+  if (!membership || membership.role === 'guest') {
     return fail('Нет доступа к этому дому', 403);
   }
 

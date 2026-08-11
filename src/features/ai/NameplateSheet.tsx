@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/features/home/useHomeData';
 import type { Item } from '@/lib/supabase/types';
 import { Button, Chip, Input, Sheet, useToast } from '@/components/ui';
+import { edgeErrorMessage } from './edgeError';
 import { hasAnything, useNameplateScan } from './useNameplate';
 import type { NameplateResult } from './useNameplate';
 
@@ -65,7 +66,7 @@ export function NameplateSheet({ open, onClose, householdId, onApply }: Props) {
       setDraft(result);
       setStage('review');
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
+      const message = await edgeErrorMessage(error);
       toast.show(message.includes('выключено') ? t('ai.disabled') : t('ai.failed'), {
         tone: 'danger',
       });

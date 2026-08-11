@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCategories } from '@/features/home/useHomeData';
 import type { Item } from '@/lib/supabase/types';
 import { Button, Chip, Sheet, useToast } from '@/components/ui';
+import { edgeErrorMessage } from './edgeError';
 import { useRoomScan, type RoomItem } from './useRoomScan';
 
 interface Props {
@@ -68,7 +69,7 @@ export function RoomScanSheet({ open, onClose, householdId, spaceId, onApply }: 
       setSelected(new Set(result.items.map((_, i) => i)));
       setStage('review');
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
+      const message = await edgeErrorMessage(error);
       toast.show(message.includes('выключено') ? t('ai.disabled') : t('ai.failed'), {
         tone: 'danger',
       });

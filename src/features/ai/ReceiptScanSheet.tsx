@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input, Sheet, useToast } from '@/components/ui';
+import { edgeErrorMessage } from './edgeError';
 import { useReceiptScan, type ReceiptScanResult } from './useReceiptScan';
 
 interface Props {
@@ -59,7 +60,7 @@ export function ReceiptScanSheet({ open, onClose, householdId, onApply }: Props)
       setResult(data);
       setStage('review');
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
+      const message = await edgeErrorMessage(error);
       toast.show(message.includes('выключено') ? t('ai.disabled') : t('ai.failed'), {
         tone: 'danger',
       });
@@ -143,7 +144,7 @@ export function ReceiptScanSheet({ open, onClose, householdId, onApply }: Props)
             <p className="text-sm font-medium text-ink mb-3">{t('ai.receiptExtracted')}</p>
 
             {result.purchase_date && (
-              <div className="mb-3 rounded-lg bg-positive-soft px-3 py-2 text-sm text-positive-ink">
+              <div className="mb-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent-ink">
                 {t('ai.dateExtracted', { date: new Date(result.purchase_date).toLocaleDateString('ru-UA') })}
               </div>
             )}

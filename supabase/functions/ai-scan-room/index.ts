@@ -91,15 +91,16 @@ Deno.serve(async (request) => {
 
   if (!householdId || !imageBase64) return fail('Нужны householdId и image');
 
-  // 2. Он правда в этой семье? Проверяем через его же токен: RLS вернёт
-  // пусто, если нет
+  // 2. Он правда в этой семье и может писать? Сканирование создаёт карточки
+  // вещей, а гостю запись запрещена (can_write в 0002_rls.sql) — та же
+  // граница, что и у ai-extract-nameplate
   const { data: membership } = await asUser
     .from('household_members')
     .select('role')
     .eq('household_id', householdId)
     .maybeSingle();
 
-  if (!membership) {
+  if (!membership || membership.role === 'guest') {
     return fail('Нет доступа к этому дому', 403);
   }
 
