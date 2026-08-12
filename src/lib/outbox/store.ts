@@ -66,14 +66,39 @@ export async function replaceEntry(entry: Entry): Promise<void> {
 
 /* ─── Файлы ──────────────────────────────────────────────────────────────── */
 
+/**
+ * Файл хранится как ArrayBuffer, а не как Blob.
+ *
+ * Safari (в том числе iOS) ненадёжно кладёт Blob в IndexedDB напрямую —
+ * структурное клонирование зависает без ошибки и без результата. Кнопка
+ * загрузки документа так и оставалась в состоянии «загружаю» навсегда: сама
+ * запись о документе в базе уже создавалась, а вот `putBlob` за ней не
+ * заканчивался никогда, и мутация не завершалась.
+ *
+ * ArrayBuffer через структурное клонирование в IndexedDB на Safari проходит
+ * нормально — это и есть стандартный обход этого класса багов.
+ */
+interface StoredBlob {
+  buffer: ArrayBuffer;
+  type: string;
+}
+
 export async function putBlob(blob: Blob): Promise<string> {
   const key = crypto.randomUUID();
-  await set(key, blob, blobStore);
+  const buffer = await blob.arrayBuffer();
+  await set(key, { buffer, type: blob.type } satisfies StoredBlob, blobStore);
   return key;
 }
 
 export async function takeBlob(key: string): Promise<Blob | null> {
-  return (await get<Blob>(key, blobStore)) ?? null;
+  const stored = await get<StoredBlob | Blob>(key, blobStore);
+  if (!stored) return null;
+  // Запись из очереди, поставленная до этого фикса, — там ещё лежит сырой
+  // Blob старого формата. Читаем как есть, а не как {buffer, type}: там нет
+  // .buffer, и мы бы отправили в хранилище файл из девяти байт текста
+  // "undefined" вместо документа человека
+  if (stored instanceof Blob) return stored;
+  return new Blob([stored.buffer], { type: stored.type });
 }
 
 export async function dropBlob(key: string): Promise<void> {
