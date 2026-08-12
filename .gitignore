@@ -41,3 +41,7 @@ coverage/
 playwright-report/
 test-results/
 .nyc_output/
+
+# python (мост для розеток)
+__pycache__/
+*.pyc

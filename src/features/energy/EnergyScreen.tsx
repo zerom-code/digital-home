@@ -6,13 +6,16 @@ import { useActiveHousehold } from '@/features/household/useHousehold';
 import { useCategories, useItems } from '@/features/home/useHomeData';
 import { PageHeader } from '@/app/PageHeader';
 import { Button, Card, EmptyState, Spinner } from '@/components/ui';
-import { estimate, totals } from '@/lib/energy/calc';
+import { estimate, monthlyCost, totals } from '@/lib/energy/calc';
 import type { Estimate } from '@/lib/energy/calc';
 import { reconcile } from '@/lib/energy/reconcile';
 import { usageSeries } from '@/lib/energy/history';
+import { projectedMonthlyKwh } from '@/lib/energy/measured';
 import { profileForItem, useEnergyProfiles, useMeters, useMeterUsage, useReadings, useTariff } from './useEnergy';
+import { usePlugs } from './usePlugs';
 import { TariffSheet } from './TariffSheet';
 import { MeterSheet } from './MeterSheet';
+import { PlugsCard } from './PlugsCard';
 import { UsageChart } from './UsageChart';
 
 /** Гривны без копеек: точность тут мнимая, а короткое число читается легче. */
@@ -36,6 +39,7 @@ export function EnergyScreen() {
   const profiles = useEnergyProfiles(householdId);
   const tariff = useTariff(householdId);
   const meters = useMeters(householdId);
+  const plugs = usePlugs(householdId);
 
   const [editingTariff, setEditingTariff] = useState(false);
   const [editingMeter, setEditingMeter] = useState(false);
@@ -50,19 +54,50 @@ export function EnergyScreen() {
     const byItem = new Map((profiles.data ?? []).map((p) => [p.item_id, p]));
     const byCategory = new Map((categories.data ?? []).map((c) => [c.id, c]));
     const rate = tariff.data ?? { kind: 'single' as const, rate_day: null };
+    const now = new Date();
+
+    // Замер отменяет оценку: если в вещь воткнута розетка с ваттметром, её
+    // расход больше не нужно угадывать по справочнику
+    const measuredByItem = new Map<string, number>();
+    for (const plug of plugs.data ?? []) {
+      if (!plug.item_id) continue;
+      const projected = projectedMonthlyKwh(plug.month_wh, now);
+      if (projected !== null) measuredByItem.set(plug.item_id, projected);
+    }
 
     return (items.data ?? []).map((item) => {
       const resolved = profileForItem(
         byItem.get(item.id),
         item.category_id ? byCategory.get(item.category_id) : undefined
       );
-      const result: Estimate = resolved
+      const guess: Estimate = resolved
         ? estimate(resolved.input, rate, month)
         : { kwh: null, cost: null, nightShare: 0 };
 
-      return { item, estimate: result, fromCategory: resolved?.fromCategory ?? false };
+      const measured = measuredByItem.get(item.id);
+      if (measured === undefined) {
+        return {
+          item,
+          estimate: guess,
+          fromCategory: resolved?.fromCategory ?? false,
+          measured: false,
+        };
+      }
+
+      // Ночную долю берём из оценки: розетка знает, сколько съедено, но не
+      // знает когда, а двузонный тариф зависит именно от времени
+      return {
+        item,
+        estimate: {
+          kwh: measured,
+          cost: monthlyCost(measured, rate, guess.nightShare),
+          nightShare: guess.nightShare,
+        } satisfies Estimate,
+        fromCategory: false,
+        measured: true,
+      };
     });
-  }, [items.data, profiles.data, categories.data, tariff.data, month]);
+  }, [items.data, profiles.data, categories.data, tariff.data, plugs.data, month]);
 
   const total = useMemo(() => totals(rows.map((row) => row.estimate)), [rows]);
 
@@ -164,10 +199,13 @@ export function EnergyScreen() {
           )}
         </Card>
 
+        {/* Розетки с ваттметром: единственные числа на экране без «≈» */}
+        <PlugsCard householdId={householdId} items={items.data ?? []} canWrite={household.canWrite} />
+
         {/* Разбивка по вещам: самые прожорливые сверху — с них и начинают */}
         <h2 className="mt-2 font-bold text-ink">{t('energy.byItem')}</h2>
         <Card className="divide-y divide-line">
-          {sorted.map(({ item, estimate: value, fromCategory }) => (
+          {sorted.map(({ item, estimate: value, fromCategory, measured }) => (
             <Link
               key={item.id}
               to={`/item/${item.id}`}
@@ -175,8 +213,13 @@ export function EnergyScreen() {
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-ink">{item.name}</span>
-                {fromCategory && value.kwh !== null && (
-                  <span className="text-xs text-ink-3">{t('energy.fromCategory')}</span>
+                {measured ? (
+                  <span className="text-xs text-accent-ink">🔌 {t('energy.byMeasurement')}</span>
+                ) : (
+                  fromCategory &&
+                  value.kwh !== null && (
+                    <span className="text-xs text-ink-3">{t('energy.fromCategory')}</span>
+                  )
                 )}
               </span>
               <span className="shrink-0 text-right">
@@ -184,10 +227,17 @@ export function EnergyScreen() {
                   <span className="text-sm text-ink-3">{t('energy.noData')}</span>
                 ) : (
                   <>
+                    {/* «≈» ставим только у оценки: у замера его быть не должно,
+                        иначе стирается разница между «посчитали» и «померили» */}
                     <span className="block font-semibold text-ink">
-                      {value.cost === null ? '—' : `≈ ${money(value.cost)} грн`}
+                      {value.cost === null
+                        ? '—'
+                        : `${measured ? '' : '≈ '}${money(value.cost)} грн`}
                     </span>
-                    <span className="text-xs text-ink-3">≈ {kwh(value.kwh)} кВт·ч</span>
+                    <span className="text-xs text-ink-3">
+                      {measured ? '' : '≈ '}
+                      {kwh(value.kwh)} кВт·ч
+                    </span>
                   </>
                 )}
               </span>

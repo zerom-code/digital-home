@@ -39,6 +39,7 @@ supabase/migrations/0004_storage.sql
 supabase/migrations/0005_tasks_and_push.sql
 supabase/migrations/0006_energy.sql
 supabase/migrations/0007_ai_cache.sql
+supabase/migrations/0008_plugs.sql
 ```
 
 Затем сгенерируйте и выполните справочник категорий:
@@ -62,7 +63,7 @@ psql "$DATABASE_URL" -f supabase/seed/categories.sql
 ```sql
 select count(*) from public.item_categories;   -- 99
 select count(*) from pg_policies
- where schemaname in ('public','storage');     -- 53
+ where schemaname in ('public','storage');     -- 58
 ```
 
 Если политик меньше — какая-то миграция не прошла целиком. Не запускайте
@@ -136,6 +137,22 @@ supabase functions deploy ai-scan-receipt
 «Распознавание с фото», с явным согласием — до этого момента все три кнопки
 («Сфотографировать табличку», «Сканировать комнату», «Отсканировать чек»)
 в интерфейсе просто вернут понятную ошибку, приложение при этом не падает.
+
+### Розетки с замером мощности (необязательно)
+
+```bash
+supabase functions deploy plug-ingest --no-verify-jwt
+```
+
+`--no-verify-jwt` здесь обязателен: замеры шлёт мост из домашней сети, а
+аккаунта Supabase у него нет и быть не должно. Вместо этого функция проверяет
+собственный отзываемый ключ — его выдаёт приложение («Энергия → Подключить
+розетку»), а в базе от него хранится только хеш. Своих секретов функция не
+требует.
+
+Розетка отвечает только по локальной сети, поэтому одной её мало: нужен ещё
+всегда включённый компьютер, который будет её опрашивать. Что ставить и
+почему — в [tools/tapo-bridge/README.md](../tools/tapo-bridge/README.md).
 
 ---
 

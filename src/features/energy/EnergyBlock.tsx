@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Card, InviteBlock } from '@/components/ui';
+import { Button, Card, Chip, InviteBlock } from '@/components/ui';
 import { useCategories } from '@/features/home/useHomeData';
-import { estimate } from '@/lib/energy/calc';
+import { estimate, monthlyCost } from '@/lib/energy/calc';
+import { livePowerW, projectedMonthlyKwh } from '@/lib/energy/measured';
 import { profileForItem, useEnergyProfiles, useTariff } from './useEnergy';
+import { usePlugs } from './usePlugs';
 import { EnergySheet } from './EnergySheet';
 
 interface Props {
@@ -17,10 +19,11 @@ interface Props {
 /**
  * Блок «Энергия» в карточке вещи.
  *
- * Считает сразу, как только у категории есть типовые значения: человек видит
- * пользу до того, как что-то заполнил, и уже потом решает, уточнять ли. Это и
- * есть режим `typical` (docs/03-energy.md) — лестница, по которой поднимаются
- * добровольно.
+ * Два источника числа, и между ними есть иерархия. Оценка по справочнику
+ * работает сразу и ничего не требует — с неё всё начинается. Замер с розетки
+ * точнее и потому **заменяет** оценку, как только появляется: сравнивать их
+ * между собой полезно один раз, чтобы понять, насколько врал справочник
+ * (docs/03-energy.md).
  */
 export function EnergyBlock({ itemId, householdId, categoryId, canWrite }: Props) {
   const { t } = useTranslation();
@@ -29,21 +32,41 @@ export function EnergyBlock({ itemId, householdId, categoryId, canWrite }: Props
   const profiles = useEnergyProfiles(householdId);
   const categories = useCategories();
   const tariff = useTariff(householdId);
+  const plugs = usePlugs(householdId);
 
   const profile = profiles.data?.find((row) => row.item_id === itemId);
   const category = categoryId ? categories.data?.find((row) => row.id === categoryId) : undefined;
+  const rate = tariff.data ?? { kind: 'single' as const, rate_day: null };
 
   const resolved = profileForItem(profile, category);
-  const result = resolved
-    ? estimate(resolved.input, tariff.data ?? { kind: 'single', rate_day: null }, new Date().getMonth() + 1)
-    : null;
+  const guess = resolved ? estimate(resolved.input, rate, new Date().getMonth() + 1) : null;
 
-  // Ни своих значений, ни типовых у категории — предлагаем заполнить, а не
-  // показываем пустую карточку с прочерками.
-  // `!resolved` здесь не лишняя проверка при живом `!result`: result выведен
-  // из resolved, но связать их за нас некому, и без неё resolved ниже
-  // остаётся возможно пустым
-  if (!resolved || !result || result.kwh === null) {
+  const now = new Date();
+  const plug = plugs.data?.find((row) => row.item_id === itemId) ?? null;
+  const measuredKwh = plug ? projectedMonthlyKwh(plug.month_wh, now) : null;
+  const live = plug ? livePowerW(plug, now) : null;
+
+  // Замер важнее оценки, но и оценка лучше пустоты
+  const shownKwh = measuredKwh ?? guess?.kwh ?? null;
+  const shownCost =
+    measuredKwh !== null
+      ? monthlyCost(measuredKwh, rate, guess?.nightShare ?? 0)
+      : (guess?.cost ?? null);
+
+  const sheet = householdId && (
+    <EnergySheet
+      open={editing}
+      onClose={() => setEditing(false)}
+      itemId={itemId}
+      householdId={householdId}
+      profile={profile}
+      category={category}
+    />
+  );
+
+  // Ни замера, ни своих значений, ни типовых у категории — предлагаем
+  // заполнить, а не показываем карточку с прочерками
+  if (shownKwh === null) {
     return (
       <>
         <InviteBlock
@@ -58,36 +81,54 @@ export function EnergyBlock({ itemId, householdId, categoryId, canWrite }: Props
             )
           }
         />
-        {householdId && (
-          <EnergySheet
-            open={editing}
-            onClose={() => setEditing(false)}
-            itemId={itemId}
-            householdId={householdId}
-            profile={profile}
-            category={category}
-          />
-        )}
+        {sheet}
       </>
     );
   }
+
+  const measured = measuredKwh !== null;
+  const approx = measured ? '' : '≈ ';
 
   return (
     <Card className="flex flex-col gap-1 p-4">
       <div className="flex items-center gap-2">
         <span aria-hidden="true">⚡</span>
         <h3 className="font-semibold text-ink">{t('energy.title')}</h3>
+        {measured && <Chip tone="accent">🔌 {t('energy.byMeasurement')}</Chip>}
       </div>
 
       <p className="text-2xl font-extrabold tracking-tight text-ink">
-        {result.cost === null
-          ? t('energy.kwhPerMonth', { kwh: result.kwh.toFixed(1) })
-          : t('energy.perMonth', { cost: Math.round(result.cost).toLocaleString('ru-UA') })}
+        {shownCost === null
+          ? `${approx}${t('energy.kwhPerMonth', { kwh: shownKwh.toFixed(1) })}`
+          : `${approx}${t('energy.perMonth', { cost: Math.round(shownCost).toLocaleString('ru-UA') })}`}
       </p>
       <p className="text-sm text-ink-3">
-        {t('energy.kwhPerMonth', { kwh: result.kwh.toFixed(1) })}
-        {resolved.fromCategory && ` · ${t('energy.fromCategory')}`}
+        {approx}
+        {t('energy.kwhPerMonth', { kwh: shownKwh.toFixed(1) })}
+        {!measured && resolved?.fromCategory && ` · ${t('energy.fromCategory')}`}
       </p>
+
+      {/* Мгновенная мощность: то, ради чего розетку и ставили */}
+      {plug && (
+        <p className="mt-1 text-sm">
+          {live === null ? (
+            <span className="text-ink-3">{t('plugs.offline')}</span>
+          ) : (
+            <span className="text-accent-ink">
+              {t('plugs.rightNow', { watts: Math.round(live).toLocaleString('ru-UA') })}
+            </span>
+          )}
+        </p>
+      )}
+
+      {/* Насколько врал справочник — это видно только когда есть оба числа.
+          Проверка guess отдельно от guess.kwh не лишняя: сужение типа через
+          `guess?.kwh != null` компилятор на сам guess не переносит */}
+      {measured && guess !== null && guess.kwh !== null && (
+        <p className="mt-1 text-xs text-ink-3">
+          {t('energy.estimateWas', { kwh: guess.kwh.toFixed(1) })}
+        </p>
+      )}
 
       {canWrite && (
         <div className="mt-2">
@@ -97,16 +138,7 @@ export function EnergyBlock({ itemId, householdId, categoryId, canWrite }: Props
         </div>
       )}
 
-      {householdId && (
-        <EnergySheet
-          open={editing}
-          onClose={() => setEditing(false)}
-          itemId={itemId}
-          householdId={householdId}
-          profile={profile}
-          category={category}
-        />
-      )}
+      {sheet}
     </Card>
   );
 }

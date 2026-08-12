@@ -300,6 +300,51 @@ export type MeterReading = {
   created_at: string;
 };
 
+/**
+ * Розетка с ваттметром (Tapo P110 и совместимые).
+ *
+ * Поля last_* — это «сейчас»: их перезаписывает мост на каждом замере, поэтому
+ * таблица не растёт. История лежит в plug_readings (supabase/migrations/0008).
+ */
+export type SmartPlug = {
+  id: string;
+  household_id: string;
+  /** Какую вещь меряет. Пусто, пока человек не привязал */
+  item_id: string | null;
+  kind: string;
+  name: string | null;
+  device_id: string;
+  last_power_w: number | null;
+  last_seen_at: string | null;
+  today_wh: number | null;
+  month_wh: number | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
+export type PlugReading = {
+  id: string;
+  household_id: string;
+  plug_id: string;
+  measured_at: string;
+  power_w: number | null;
+  today_wh: number | null;
+  created_at: string;
+};
+
+/** Ключ моста. В базе лежит только хеш — сам ключ показывается один раз. */
+export type PlugToken = {
+  id: string;
+  household_id: string;
+  token_hash: string;
+  name: string | null;
+  created_by: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+};
+
 export type ServiceRecord = {
   id: string;
   household_id: string;
@@ -452,6 +497,24 @@ export type Database = {
         Update: Updatable<MeterReading>;
         Relationships: NoRelations;
       };
+      smart_plugs: {
+        Row: SmartPlug;
+        Insert: Insertable<SmartPlug, 'household_id' | 'device_id'>;
+        Update: Updatable<SmartPlug>;
+        Relationships: NoRelations;
+      };
+      plug_readings: {
+        Row: PlugReading;
+        Insert: Insertable<PlugReading, 'household_id' | 'plug_id'>;
+        Update: Updatable<PlugReading>;
+        Relationships: NoRelations;
+      };
+      plug_tokens: {
+        Row: PlugToken;
+        Insert: Insertable<PlugToken, 'household_id' | 'token_hash'>;
+        Update: Updatable<PlugToken>;
+        Relationships: NoRelations;
+      };
       push_subscriptions: {
         Row: PushSubscriptionRow;
         Insert: Insertable<PushSubscriptionRow, 'user_id' | 'endpoint' | 'p256dh' | 'auth_key'>;
@@ -496,6 +559,12 @@ export type Database = {
       refresh_my_tasks: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      plug_daily_energy: {
+        Args: { p_plug_id: string; p_days?: number; p_tz?: string };
+        // Пусто — замеров нет либо розетка чужая
+        // (supabase/migrations/0008_plugs.sql)
+        Returns: { day: string; wh: number }[];
       };
     };
     Enums: {
