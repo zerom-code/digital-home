@@ -117,6 +117,7 @@ function DocumentRow({
   onDelete: () => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [opening, setOpening] = useState(false);
 
   async function open() {
@@ -126,12 +127,28 @@ function DocumentRow({
     }
     if (!document.storage_path) return;
 
+    // window.open обязан быть прямым следствием клика — вызванный после
+    // await, он для Safari (особенно в установленном PWA) уже не «клик
+    // пользователя», а всплывающее окно, и блокируется молча. Поэтому
+    // открываем вкладку сразу, синхронно, а адрес подставляем, когда
+    // подписанная ссылка будет готова. noopener здесь не ставим намеренно:
+    // с ним window.open вернул бы null, и подставить адрес было бы некуда —
+    // ссылка ведёт на наше собственное хранилище, а не на чужой сайт
+    const tab = window.open('', '_blank');
+
     setOpening(true);
     const url = await signedUrl(document.storage_path);
     setOpening(false);
 
-    // Файл ещё в очереди на загрузку — ссылки пока нет
-    if (url) window.open(url, '_blank', 'noopener');
+    if (url && tab) {
+      tab.location.href = url;
+    } else {
+      tab?.close();
+      // Файл мог ещё не долиться из офлайн-очереди — это не «сломано»,
+      // а «подожди» (docs/05-architecture.md), но молчать нельзя: до этого
+      // человек просто не понимал, почему ничего не открывается
+      toast.show(t('documents.openFailed'), { tone: 'danger' });
+    }
   }
 
   const pending = !document.external_url && !document.storage_path;
